@@ -31,7 +31,7 @@ class User < ApplicationRecord
 
   # Get full address
   def full_address
-    [address, city, province&.name, postal_code].compact.reject(&:blank?).join(', ')
+    [address, city, province&.name, postal_code].compact.reject(&:blank?).join(", ")
   end
 
   # Record login

@@ -3,7 +3,7 @@ class CreateLoginHistories < ActiveRecord::Migration[7.1]
     create_table :login_histories do |t|
       t.references :user, null: false, foreign_key: { on_delete: :cascade }
       t.string :ip_address, limit: 45
-      t.datetime :login_time, default: -> { 'CURRENT_TIMESTAMP' }
+      t.datetime :login_time
 
       t.timestamps
     end
