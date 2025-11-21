@@ -1,0 +1,123 @@
+<div class="container mt-4">
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="/">Home</a></li>
+      <li class="breadcrumb-item"><a href="<%= orders_path %>">My Orders</a></li>
+      <li class="breadcrumb-item active"><%= @order.order_number %></li>
+    </ol>
+  </nav>
+
+  <div class="row">
+    <div class="col-md-8">
+      <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <strong>Order #<%= @order.order_number %></strong>
+          <% case @order.order_status.status_name %>
+          <% when "pending" %>
+            <span class="badge bg-warning">Pending</span>
+          <% when "confirmed" %>
+            <span class="badge bg-info">Confirmed</span>
+          <% when "delivered" %>
+            <span class="badge bg-success">Delivered</span>
+          <% when "cancelled" %>
+            <span class="badge bg-danger">Cancelled</span>
+          <% end %>
+        </div>
+        <div class="card-body">
+          <p><strong>Order Date:</strong> <%= @order.created_at.strftime("%Y-%m-%d %H:%M") %></p>
+          
+          <h5 class="mt-4">Order Items</h5>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Price</th>
+                <th>Quantity</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% @order.order_items.each do |item| %>
+                <tr>
+                  <td><%= item.product_name %></td>
+                  <td>$<%= number_with_precision(item.unit_price, precision: 2) %></td>
+                  <td><%= item.quantity %></td>
+                  <td>$<%= number_with_precision(item.total_price, precision: 2) %></td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-header">
+          <strong>Delivery Address</strong>
+        </div>
+        <div class="card-body">
+          <p><%= @order.customer_name %></p>
+          <p><%= @order.delivery_address %></p>
+          <p><%= @order.delivery_city %>, <%= @order.delivery_postal_code %></p>
+          <p>Phone: <%= @order.customer_phone %></p>
+          <p>Email: <%= @order.customer_email %></p>
+        </div>
+      </div>
+
+      <% if @order.customer_notes.present? %>
+        <div class="card mb-4">
+          <div class="card-header">
+            <strong>Order Notes</strong>
+          </div>
+          <div class="card-body">
+            <p><%= @order.customer_notes %></p>
+          </div>
+        </div>
+      <% end %>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card">
+        <div class="card-header">
+          <strong>Order Summary</strong>
+        </div>
+        <div class="card-body">
+          <div class="d-flex justify-content-between mb-2">
+            <span>Subtotal:</span>
+            <span>$<%= number_with_precision(@order.subtotal, precision: 2) %></span>
+          </div>
+          <% if @order.tax_gst > 0 %>
+            <div class="d-flex justify-content-between mb-2">
+              <span>GST:</span>
+              <span>$<%= number_with_precision(@order.tax_gst, precision: 2) %></span>
+            </div>
+          <% end %>
+          <% if @order.tax_pst > 0 %>
+            <div class="d-flex justify-content-between mb-2">
+              <span>PST:</span>
+              <span>$<%= number_with_precision(@order.tax_pst, precision: 2) %></span>
+            </div>
+          <% end %>
+          <div class="d-flex justify-content-between mb-2">
+            <span>Tax Total:</span>
+            <span>$<%= number_with_precision(@order.tax_amount, precision: 2) %></span>
+          </div>
+          <% if @order.delivery_fee > 0 %>
+            <div class="d-flex justify-content-between mb-2">
+              <span>Delivery Fee:</span>
+              <span>$<%= number_with_precision(@order.delivery_fee, precision: 2) %></span>
+            </div>
+          <% end %>
+          <hr>
+          <div class="d-flex justify-content-between">
+            <strong>Total:</strong>
+            <strong>$<%= number_with_precision(@order.total_amount, precision: 2) %></strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-3">
+        <%= link_to "Back to Orders", orders_path, class: "btn btn-outline-primary w-100" %>
+      </div>
+    </div>
+  </div>
+</div>

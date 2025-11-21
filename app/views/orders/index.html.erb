@@ -1,0 +1,60 @@
+<div class="container mt-4">
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="/">Home</a></li>
+      <li class="breadcrumb-item active">My Orders</li>
+    </ol>
+  </nav>
+
+  <h2>My Orders</h2>
+
+  <% if @orders.any? %>
+    <div class="table-responsive">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th>Order Number</th>
+            <th>Date</th>
+            <th>Items</th>
+            <th>Total</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @orders.each do |order| %>
+            <tr>
+              <td><%= order.order_number %></td>
+              <td><%= order.created_at.strftime("%Y-%m-%d %H:%M") %></td>
+              <td><%= order.order_items.count %> items</td>
+              <td>$<%= number_with_precision(order.total_amount, precision: 2) %></td>
+              <td>
+                <% case order.order_status.status_name %>
+                <% when "pending" %>
+                  <span class="badge bg-warning">Pending</span>
+                <% when "confirmed" %>
+                  <span class="badge bg-info">Confirmed</span>
+                <% when "delivered" %>
+                  <span class="badge bg-success">Delivered</span>
+                <% when "cancelled" %>
+                  <span class="badge bg-danger">Cancelled</span>
+                <% end %>
+              </td>
+              <td>
+                <%= link_to "View", order_path(order), class: "btn btn-sm btn-outline-primary" %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="d-flex justify-content-center mt-4">
+      <%= paginate @orders %>
+    </div>
+  <% else %>
+    <div class="alert alert-info">
+      You have no orders yet. <a href="<%= products_path %>">Start shopping</a>
+    </div>
+  <% end %>
+</div>
