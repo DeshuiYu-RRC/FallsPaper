@@ -1,14 +1,53 @@
 Rails.application.routes.draw do
-  # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
+  # Devise routes for user authentication
+  devise_for :users, controllers: {
+    sessions: 'users/sessions',
+    registrations: 'users/registrations'
+  }
 
-  # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
-  # Can be used by load balancers and uptime monitors to verify that the app is live.
-  get "up" => "rails/health#show", as: :rails_health_check
+  # ActiveAdmin routes
+  ActiveAdmin.routes(self)
 
-  # Render dynamic PWA files from app/views/pwa/* (remember to link manifest in application.html.erb)
-  # get "manifest" => "rails/pwa#manifest", as: :pwa_manifest
-  # get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
+  # Root route
+  root 'home#index'
 
-  # Defines the root path route ("/")
-  # root "posts#index"
+  # Static pages
+  get 'about', to: 'pages#about'
+  get 'contact', to: 'pages#contact'
+
+  # Products routes
+  resources :products, only: [:index, :show] do
+    collection do
+      get 'search'
+      get 'on_sale'
+      get 'new_arrivals'
+      get 'recently_updated'
+    end
+  end
+
+  # Categories routes
+  resources :categories, only: [:index, :show]
+
+  # Cart routes
+  resource :cart, only: [:show] do
+    post 'add/:product_id', to: 'carts#add', as: 'add'
+    patch 'update/:product_id', to: 'carts#update', as: 'update_item'
+    delete 'remove/:product_id', to: 'carts#remove', as: 'remove'
+    delete 'clear', to: 'carts#clear', as: 'clear'
+  end
+
+  # Checkout routes
+  resource :checkout, only: [:show, :create] do
+    get 'success'
+    get 'cancel'
+  end
+
+  # Orders routes (for logged in users)
+  resources :orders, only: [:index, :show]
+
+  # User profile routes
+  resource :profile, only: [:show, :edit, :update]
+
+  # Health check
+  get 'health', to: 'health#index'
 end
