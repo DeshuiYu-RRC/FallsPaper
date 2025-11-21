@@ -1,0 +1,52 @@
+<div class="container mt-4">
+  <div class="jumbotron bg-light p-5 rounded mb-4">
+    <h1 class="display-4">Welcome to Falls Paper</h1>
+    <p class="lead">Your one-stop shop for thermal paper, copy paper, toner cartridges, and more.</p>
+    <hr class="my-4">
+    <p>Browse our products or visit the admin panel to manage the store.</p>
+    <a class="btn btn-primary btn-lg" href="/admin" role="button">Admin Panel</a>
+  </div>
+
+  <h2 class="mb-4">Categories</h2>
+  <div class="row mb-5">
+    <% @categories.each do |category| %>
+      <div class="col-md-3 mb-3">
+        <div class="card h-100">
+          <div class="card-body">
+            <h5 class="card-title"><%= category.category_name %></h5>
+            <p class="card-text text-muted"><%= category.category_description.to_s.truncate(80) %></p>
+            <p class="card-text"><small><%= category.products.count %> products</small></p>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+
+  <h2 class="mb-4">Featured Products</h2>
+  <div class="row">
+    <% @featured_products.each do |product| %>
+      <div class="col-md-3 mb-4">
+        <div class="card h-100">
+          <% if product.image.present? %>
+            <img src="<%= product.image %>" class="card-img-top" alt="<%= product.name %>" style="height: 150px; object-fit: cover;">
+          <% else %>
+            <div class="card-img-top bg-secondary d-flex align-items-center justify-content-center" style="height: 150px;">
+              <span class="text-white">No Image</span>
+            </div>
+          <% end %>
+          <div class="card-body">
+            <h6 class="card-title"><%= product.name.truncate(40) %></h6>
+            <p class="card-text">
+              <% if product.on_sale? %>
+                <span class="text-danger"><strong>$<%= product.current_price %></strong></span>
+                <span class="text-muted text-decoration-line-through">$<%= product.original_price %></span>
+              <% else %>
+                <strong>$<%= product.current_price %></strong>
+              <% end %>
+            </p>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>
