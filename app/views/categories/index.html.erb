@@ -1,0 +1,29 @@
+<div class="container mt-4">
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="/">Home</a></li>
+      <li class="breadcrumb-item active">Categories</li>
+    </ol>
+  </nav>
+
+  <h2>Product Categories</h2>
+
+  <div class="row">
+    <% @categories.each do |category| %>
+      <div class="col-md-4 mb-4">
+        <div class="card h-100">
+          <div class="card-body">
+            <h5 class="card-title"><%= category.category_name %></h5>
+            <p class="card-text text-muted"><%= category.category_description %></p>
+            <p class="card-text">
+              <span class="badge bg-secondary"><%= category.products.count %> products</span>
+            </p>
+          </div>
+          <div class="card-footer bg-white">
+            <%= link_to "View Products", category_path(category), class: "btn btn-primary w-100" %>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>
