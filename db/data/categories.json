@@ -1,0 +1,53 @@
+{
+    "success": true,
+    "data": [
+        {
+            "category_id": -1,
+            "category_name": "All Categories",
+            "category_description": "All Categories",
+            "category_count": 17
+        },
+        {
+            "category_id": 1,
+            "category_name": "Thermal Paper",
+            "category_description": "Used in thermal printers for receipts and labels. No ink needed.",
+            "category_count": 5
+        },
+        {
+            "category_id": 2,
+            "category_name": "Copy Paper",
+            "category_description": "Standard paper for printing, copying, and emails.",
+            "category_count": 2
+        },
+        {
+            "category_id": 3,
+            "category_name": "Bond Paper",
+            "category_description": "Durable paper for official documents and contracts.",
+            "category_count": 1
+        },
+        {
+            "category_id": 4,
+            "category_name": "Toner Cartridge",
+            "category_description": "Contains toner powder for laser printing.",
+            "category_count": 3
+        },
+        {
+            "category_id": 5,
+            "category_name": "Toner Drum",
+            "category_description": "Transfers toner from cartridge to paper in laser printers.",
+            "category_count": 2
+        },
+        {
+            "category_id": 6,
+            "category_name": "Ribbon Ink Cartridge",
+            "category_description": "Used in dot matrix printers with inked ribbon.",
+            "category_count": 4
+        },
+        {
+            "category_id": 7,
+            "category_name": "Others",
+            "category_description": "Uncategorized or miscellaneous items.",
+            "category_count": 0
+        }
+    ]
+}

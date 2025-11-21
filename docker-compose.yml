@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  # MySQL Database
+  db:
+    image: mysql:8.0
+    container_name: ecommerce_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: fallspaper
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: fallspaper
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./db/init:/docker-entrypoint-initdb.d
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "admin", "-pfallspaper"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Rails Application
+  web:
+    build: .
+    container_name: ecommerce_web
+    command: bash -c "rm -f tmp/pids/server.pid && bundle exec rails server -b '0.0.0.0'"
+    volumes:
+      - .:/app
+      - bundle_cache:/usr/local/bundle
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_HOST: db
+      DATABASE_USERNAME: admin
+      DATABASE_PASSWORD: fallspaper
+      DATABASE_NAME: fallspaper
+      RAILS_ENV: development
+      RAILS_MASTER_KEY: ${RAILS_MASTER_KEY:-}
+    stdin_open: true
+    tty: true
+
+volumes:
+  mysql_data:
+  bundle_cache:
