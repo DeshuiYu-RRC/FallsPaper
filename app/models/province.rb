@@ -3,23 +3,21 @@ class Province < ApplicationRecord
   has_many :users, dependent: :nullify
 
   # Validations
-  validates :code, presence: true, 
-                   uniqueness: true, 
-                   length: { maximum: 2 }
-  validates :name, presence: true, 
-                   uniqueness: true, 
-                   length: { maximum: 50 }
-  validates :gst_rate, numericality: { greater_than_or_equal_to: 0, less_than_or_equal_to: 1 }
-  validates :pst_rate, numericality: { greater_than_or_equal_to: 0, less_than_or_equal_to: 1 }
-  validates :hst_rate, numericality: { greater_than_or_equal_to: 0, less_than_or_equal_to: 1 }
+  validates :code, presence: true, uniqueness: true, length: { maximum: 2 }
+  validates :name, presence: true, uniqueness: true, length: { maximum: 50 }
+
+  # Ransack configuration
+  def self.ransackable_attributes(auth_object = nil)
+    ["code", "created_at", "gst_rate", "hst_rate", "id", "name", "pst_rate", "updated_at"]
+  end
+
+  def self.ransackable_associations(auth_object = nil)
+    ["users"]
+  end
 
   # Calculate total tax rate
   def total_tax_rate
-    if hst_rate > 0
-      hst_rate
-    else
-      gst_rate + pst_rate
-    end
+    hst_rate > 0 ? hst_rate : gst_rate + pst_rate
   end
 
   # Calculate taxes for a given amount

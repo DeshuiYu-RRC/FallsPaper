@@ -24,6 +24,15 @@ class User < ApplicationRecord
   scope :admins, -> { joins(:role).where(roles: { role_name: [Role::ADMIN, Role::ROOT] }) }
   scope :customers, -> { joins(:role).where(roles: { role_name: Role::USER }) }
 
+  # Ransack configuration - exclude sensitive fields
+  def self.ransackable_attributes(auth_object = nil)
+    ["address", "city", "created_at", "email", "id", "is_verified", "phone", "postal_code", "province_id", "role_id", "updated_at", "username"]
+  end
+
+  def self.ransackable_associations(auth_object = nil)
+    ["login_histories", "orders", "province", "role"]
+  end
+
   # Check if user is admin
   def admin?
     role&.admin? || false

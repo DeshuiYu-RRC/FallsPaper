@@ -4,13 +4,20 @@ class LoginHistory < ApplicationRecord
 
   # Validations
   validates :user_id, presence: true
-  validates :ip_address, length: { maximum: 45 }, allow_blank: true
 
   # Scopes
   scope :recent, -> { order(login_time: :desc) }
-  scope :by_user, ->(user_id) { where(user_id: user_id) }
+
+  # Ransack configuration
+  def self.ransackable_attributes(auth_object = nil)
+    ["created_at", "id", "ip_address", "login_time", "updated_at", "user_id"]
+  end
+
+  def self.ransackable_associations(auth_object = nil)
+    ["user"]
+  end
 
   def to_s
-    "Login at #{login_time&.strftime('%Y-%m-%d %H:%M:%S')} from #{ip_address}"
+    "Login at #{login_time&.strftime("%Y-%m-%d %H:%M:%S")} from #{ip_address}"
   end
 end

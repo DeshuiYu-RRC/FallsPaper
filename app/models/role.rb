@@ -3,18 +3,21 @@ class Role < ApplicationRecord
   has_many :users, dependent: :nullify
 
   # Validations
-  validates :role_name, presence: true, 
-                        uniqueness: true, 
-                        length: { maximum: 50 }
+  validates :role_name, presence: true, uniqueness: true, length: { maximum: 50 }
 
-  # Constants for role names
-  ADMIN = 'admin'.freeze
-  USER = 'user'.freeze
-  ROOT = 'root'.freeze
+  # Constants
+  ADMIN = "admin".freeze
+  USER = "user".freeze
+  ROOT = "root".freeze
 
-  # Scopes
-  scope :admin_role, -> { find_by(role_name: ADMIN) }
-  scope :user_role, -> { find_by(role_name: USER) }
+  # Ransack configuration
+  def self.ransackable_attributes(auth_object = nil)
+    ["created_at", "id", "role_description", "role_name", "updated_at"]
+  end
+
+  def self.ransackable_associations(auth_object = nil)
+    ["users"]
+  end
 
   def admin?
     role_name == ADMIN || role_name == ROOT
