@@ -18,18 +18,27 @@ class Product < ApplicationRecord
                          numericality: { greater_than_or_equal_to: 0 }
 
   # Scopes
-  scope :in_stock, -> { where('stock > 0') }
+  scope :in_stock, -> { where("stock > 0") }
   scope :out_of_stock, -> { where(stock: 0) }
-  scope :on_sale, -> { where('current_price < original_price') }
+  scope :on_sale, -> { where("current_price < original_price") }
   scope :by_category, ->(category_id) { where(products_category_id: category_id) if category_id.present? }
-  scope :recent, -> { where('created_at >= ?', 3.days.ago) }
-  scope :recently_updated, -> { where('updated_at >= ? AND created_at < ?', 3.days.ago, 3.days.ago) }
+  scope :recent, -> { where("created_at >= ?", 3.days.ago) }
+  scope :recently_updated, -> { where("updated_at >= ? AND created_at < ?", 3.days.ago, 3.days.ago) }
   scope :search_by_keyword, ->(keyword) { 
-    where('name LIKE ? OR quantity LIKE ?', "%#{keyword}%", "%#{keyword}%") if keyword.present? 
+    where("name LIKE ? OR quantity LIKE ?", "%#{keyword}%", "%#{keyword}%") if keyword.present? 
   }
   scope :ordered_by_name, -> { order(:name) }
   scope :ordered_by_price, -> { order(:current_price) }
   scope :ordered_by_newest, -> { order(created_at: :desc) }
+
+  # Ransack configuration
+  def self.ransackable_attributes(auth_object = nil)
+    ["bulk_price", "created_at", "current_price", "id", "image", "name", "original_price", "products_category_id", "quantity", "stock", "updated_at"]
+  end
+
+  def self.ransackable_associations(auth_object = nil)
+    ["products_category", "products_detail", "order_items"]
+  end
 
   # Check if product is on sale
   def on_sale?
@@ -59,7 +68,7 @@ class Product < ApplicationRecord
 
   # Get category name
   def category_name
-    products_category&.category_name || 'Uncategorized'
+    products_category&.category_name || "Uncategorized"
   end
 
   def to_s

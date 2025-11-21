@@ -11,6 +11,15 @@ class ProductsCategory < ApplicationRecord
   scope :with_products, -> { joins(:products).distinct }
   scope :ordered, -> { order(:category_name) }
 
+  # Ransack configuration
+  def self.ransackable_attributes(auth_object = nil)
+    ["category_description", "category_name", "created_at", "id", "updated_at"]
+  end
+
+  def self.ransackable_associations(auth_object = nil)
+    ["products"]
+  end
+
   # Get product count for this category
   def product_count
     products.count
