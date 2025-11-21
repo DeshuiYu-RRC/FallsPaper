@@ -1,0 +1,114 @@
+<div class="container mt-4">
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="/">Home</a></li>
+      <li class="breadcrumb-item"><a href="<%= cart_path %>">Cart</a></li>
+      <li class="breadcrumb-item active">Checkout</li>
+    </ol>
+  </nav>
+
+  <h2>Checkout</h2>
+
+  <div class="row">
+    <div class="col-md-8">
+      <%= form_tag checkout_path, method: :post do %>
+        <div class="card mb-4">
+          <div class="card-header">
+            <strong>Contact Information</strong>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Name *</label>
+                <%= text_field_tag :customer_name, @customer_name, class: "form-control", required: true %>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Email *</label>
+                <%= email_field_tag :customer_email, @customer_email, class: "form-control", required: true %>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Phone *</label>
+              <%= text_field_tag :customer_phone, @customer_phone, class: "form-control", required: true %>
+            </div>
+          </div>
+        </div>
+
+        <div class="card mb-4">
+          <div class="card-header">
+            <strong>Delivery Address</strong>
+          </div>
+          <div class="card-body">
+            <div class="mb-3">
+              <label class="form-label">Address *</label>
+              <%= text_field_tag :delivery_address, @delivery_address, class: "form-control", required: true %>
+            </div>
+            <div class="row">
+              <div class="col-md-4 mb-3">
+                <label class="form-label">City *</label>
+                <%= text_field_tag :delivery_city, @delivery_city, class: "form-control", required: true %>
+              </div>
+              <div class="col-md-4 mb-3">
+                <label class="form-label">Province *</label>
+                <%= select_tag :province_id, 
+                    options_from_collection_for_select(@provinces, :id, :name, @province&.id),
+                    include_blank: "Select Province",
+                    class: "form-select",
+                    required: true %>
+              </div>
+              <div class="col-md-4 mb-3">
+                <label class="form-label">Postal Code *</label>
+                <%= text_field_tag :delivery_postal_code, @delivery_postal_code, class: "form-control", required: true %>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card mb-4">
+          <div class="card-header">
+            <strong>Order Notes (Optional)</strong>
+          </div>
+          <div class="card-body">
+            <%= text_area_tag :customer_notes, "", class: "form-control", rows: 3, placeholder: "Any special instructions for your order..." %>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-between">
+          <%= link_to "Back to Cart", cart_path, class: "btn btn-outline-secondary" %>
+          <%= submit_tag "Place Order", class: "btn btn-primary btn-lg" %>
+        </div>
+      <% end %>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card">
+        <div class="card-header">
+          <strong>Order Summary</strong>
+        </div>
+        <div class="card-body">
+          <% @cart_items.each do |item| %>
+            <div class="d-flex justify-content-between mb-2">
+              <span><%= item[:product].name.truncate(25) %> x <%= item[:quantity] %></span>
+              <span>$<%= number_with_precision(item[:total], precision: 2) %></span>
+            </div>
+          <% end %>
+          <hr>
+          <div class="d-flex justify-content-between mb-2">
+            <span>Subtotal:</span>
+            <span>$<%= number_with_precision(@subtotal, precision: 2) %></span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <span>Tax:</span>
+            <span>Based on province</span>
+          </div>
+          <hr>
+          <div class="d-flex justify-content-between">
+            <strong>Subtotal:</strong>
+            <strong>$<%= number_with_precision(@subtotal, precision: 2) %></strong>
+          </div>
+          <small class="text-muted">Final total with tax will be shown after province selection.</small>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
