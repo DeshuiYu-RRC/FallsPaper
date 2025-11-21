@@ -18,10 +18,6 @@ class Order < ApplicationRecord
   validates :delivery_postal_code, length: { maximum: 10 }, allow_blank: true
   validates :subtotal, presence: true, numericality: { greater_than_or_equal_to: 0 }
   validates :total_amount, presence: true, numericality: { greater_than_or_equal_to: 0 }
-  validates :tax_gst, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true
-  validates :tax_pst, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true
-  validates :tax_amount, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true
-  validates :delivery_fee, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true
 
   # Callbacks
   before_validation :generate_order_number, on: :create
@@ -34,11 +30,20 @@ class Order < ApplicationRecord
   scope :delivered, -> { joins(:order_status).where(order_statuses: { status_name: OrderStatus::DELIVERED }) }
   scope :cancelled, -> { joins(:order_status).where(order_statuses: { status_name: OrderStatus::CANCELLED }) }
 
+  # Ransack configuration
+  def self.ransackable_attributes(auth_object = nil)
+    ["admin_notes", "confirmed_at", "created_at", "customer_email", "customer_name", "customer_notes", "customer_phone", "delivered_at", "delivery_address", "delivery_city", "delivery_fee", "delivery_postal_code", "id", "order_number", "order_status_id", "shipped_at", "subtotal", "tax_amount", "tax_gst", "tax_pst", "total_amount", "updated_at", "user_id"]
+  end
+
+  def self.ransackable_associations(auth_object = nil)
+    ["order_items", "order_status", "user"]
+  end
+
   # Generate unique order number
   def generate_order_number
     return if order_number.present?
     
-    date_part = Time.current.strftime('%Y%m%d')
+    date_part = Time.current.strftime("%Y%m%d")
     random_part = SecureRandom.hex(3).upcase
     self.order_number = "ORD#{date_part}#{random_part}"
   end
@@ -82,7 +87,7 @@ class Order < ApplicationRecord
 
   # Get full delivery address
   def full_delivery_address
-    [delivery_address, delivery_city, delivery_postal_code].compact.reject(&:blank?).join(', ')
+    [delivery_address, delivery_city, delivery_postal_code].compact.reject(&:blank?).join(", ")
   end
 
   # Item count

@@ -6,19 +6,26 @@ class OrderStatus < ApplicationRecord
   validates :status_name, presence: true, 
                           uniqueness: true, 
                           length: { maximum: 50 }
-  validates :status_order, numericality: { only_integer: true }, allow_nil: true
 
-  # Constants for status names
-  PENDING = 'pending'.freeze
-  CONFIRMED = 'confirmed'.freeze
-  DELIVERED = 'delivered'.freeze
-  CANCELLED = 'cancelled'.freeze
+  # Constants
+  PENDING = "pending".freeze
+  CONFIRMED = "confirmed".freeze
+  DELIVERED = "delivered".freeze
+  CANCELLED = "cancelled".freeze
 
   # Scopes
   scope :ordered, -> { order(:status_order) }
-  scope :active, -> { where.not(status_name: CANCELLED) }
 
-  # Class methods to get specific statuses
+  # Ransack configuration
+  def self.ransackable_attributes(auth_object = nil)
+    ["created_at", "id", "status_description", "status_name", "status_order", "updated_at"]
+  end
+
+  def self.ransackable_associations(auth_object = nil)
+    ["orders"]
+  end
+
+  # Class methods
   def self.pending_status
     find_by(status_name: PENDING)
   end
