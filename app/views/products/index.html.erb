@@ -1,0 +1,144 @@
+<div class="container mt-4">
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="/">Home</a></li>
+      <li class="breadcrumb-item active">Products</li>
+      <% if @current_category %>
+        <li class="breadcrumb-item active"><%= @current_category.category_name %></li>
+      <% end %>
+    </ol>
+  </nav>
+
+  <div class="row">
+    <!-- Sidebar -->
+    <div class="col-md-3">
+      <!-- Search Form -->
+      <div class="card mb-4">
+        <div class="card-header">Search Products</div>
+        <div class="card-body">
+          <%= form_tag search_products_path, method: :get do %>
+            <div class="mb-3">
+              <%= text_field_tag :keyword, params[:keyword], class: "form-control", placeholder: "Enter keyword..." %>
+            </div>
+            <div class="mb-3">
+              <%= select_tag :category_id, 
+                  options_from_collection_for_select(@categories, :id, :category_name, params[:category_id]),
+                  include_blank: "All Categories",
+                  class: "form-select" %>
+            </div>
+            <%= submit_tag "Search", class: "btn btn-primary w-100" %>
+          <% end %>
+        </div>
+      </div>
+
+      <!-- Categories -->
+      <div class="card mb-4">
+        <div class="card-header">Categories</div>
+        <ul class="list-group list-group-flush">
+          <li class="list-group-item">
+            <a href="<%= products_path %>" class="text-decoration-none">All Products</a>
+          </li>
+          <% @categories.each do |category| %>
+            <li class="list-group-item">
+              <a href="<%= products_path(category_id: category.id) %>" class="text-decoration-none">
+                <%= category.category_name %>
+                <span class="badge bg-secondary float-end"><%= category.products.count %></span>
+              </a>
+            </li>
+          <% end %>
+        </ul>
+      </div>
+
+      <!-- Filters -->
+      <div class="card mb-4">
+        <div class="card-header">Quick Filters</div>
+        <ul class="list-group list-group-flush">
+          <li class="list-group-item">
+            <a href="<%= on_sale_products_path %>" class="text-decoration-none">On Sale</a>
+          </li>
+          <li class="list-group-item">
+            <a href="<%= new_arrivals_products_path %>" class="text-decoration-none">New Arrivals</a>
+          </li>
+          <li class="list-group-item">
+            <a href="<%= recently_updated_products_path %>" class="text-decoration-none">Recently Updated</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Products Grid -->
+    <div class="col-md-9">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><%= @page_title || "Products" %></h2>
+        <div>
+          <select class="form-select" onchange="window.location.href=this.value">
+            <option value="<%= request.path %>?sort=newest" <%= "selected" if params[:sort] == "newest" %>>Newest</option>
+            <option value="<%= request.path %>?sort=name" <%= "selected" if params[:sort] == "name" %>>Name</option>
+            <option value="<%= request.path %>?sort=price_asc" <%= "selected" if params[:sort] == "price_asc" %>>Price: Low to High</option>
+            <option value="<%= request.path %>?sort=price_desc" <%= "selected" if params[:sort] == "price_desc" %>>Price: High to Low</option>
+          </select>
+        </div>
+      </div>
+
+      <% if @products.any? %>
+        <div class="row">
+          <% @products.each do |product| %>
+            <div class="col-md-4 mb-4">
+              <div class="card h-100 product-card">
+                <% if product.on_sale? %>
+                  <span class="badge bg-danger badge-sale position-absolute" style="top: 10px; right: 10px;">
+                    <%= product.discount_percentage %>% OFF
+                  </span>
+                <% end %>
+                <% if product.image.present? %>
+                  <a href="<%= product_path(product) %>">
+                    <img src="<%= product.image %>" class="card-img-top" alt="<%= product.name %>" style="height: 150px; object-fit: cover;">
+                  </a>
+                <% else %>
+                  <a href="<%= product_path(product) %>">
+                    <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 150px;">
+                      <span class="text-muted">No Image</span>
+                    </div>
+                  </a>
+                <% end %>
+                <div class="card-body">
+                  <h6 class="card-title">
+                    <a href="<%= product_path(product) %>" class="text-decoration-none text-dark">
+                      <%= product.name.truncate(50) %>
+                    </a>
+                  </h6>
+                  <p class="card-text text-muted small"><%= product.category_name %></p>
+                  <p class="card-text">
+                    <% if product.on_sale? %>
+                      <span class="text-danger fw-bold">$<%= number_with_precision(product.current_price, precision: 2) %></span>
+                      <span class="text-muted text-decoration-line-through ms-2">$<%= number_with_precision(product.original_price, precision: 2) %></span>
+                    <% else %>
+                      <span class="fw-bold">$<%= number_with_precision(product.current_price, precision: 2) %></span>
+                    <% end %>
+                  </p>
+                </div>
+                <div class="card-footer bg-white">
+                  <% if product.in_stock? %>
+                    <%= link_to "Add to Cart", add_cart_path(product_id: product.id), method: :post, class: "btn btn-primary btn-sm w-100" %>
+                  <% else %>
+                    <button class="btn btn-secondary btn-sm w-100" disabled>Out of Stock</button>
+                  <% end %>
+                </div>
+              </div>
+            </div>
+          <% end %>
+        </div>
+
+        <!-- Pagination -->
+        <div class="d-flex justify-content-center mt-4">
+          <%= paginate @products %>
+        </div>
+      <% else %>
+        <div class="alert alert-info">
+          No products found.
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
