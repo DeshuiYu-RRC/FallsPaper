@@ -47,7 +47,9 @@
                     </td>
                     <td>$<%= number_with_precision(item[:total], precision: 2) %></td>
                     <td>
-                      <%= link_to "Remove", remove_cart_path(product_id: item[:product].id), method: :delete, class: "btn btn-sm btn-outline-danger", data: { confirm: "Are you sure?" } %>
+                      <%= form_tag remove_cart_path(product_id: item[:product].id), method: :delete, style: "display: inline;" do %>
+                        <%= submit_tag "Remove", class: "btn btn-sm btn-outline-danger", data: { confirm: "Are you sure?" } %>
+                      <% end %>
                     </td>
                   </tr>
                 <% end %>
@@ -56,9 +58,11 @@
           </div>
         </div>
 
-        <div class="mt-3">
+        <div class="mt-3 d-flex justify-content-between">
           <%= link_to "Continue Shopping", products_path, class: "btn btn-outline-primary" %>
-          <%= link_to "Clear Cart", clear_cart_path, method: :delete, class: "btn btn-outline-danger", data: { confirm: "Are you sure you want to clear the cart?" } %>
+          <%= form_tag clear_cart_path, method: :delete, style: "display: inline;" do %>
+            <%= submit_tag "Clear Cart", class: "btn btn-outline-danger", data: { confirm: "Are you sure you want to clear the cart?" } %>
+          <% end %>
         </div>
       </div>
 
