@@ -59,15 +59,15 @@
                     <li><a class="dropdown-item" href="/admin">Admin Panel</a></li>
                   <% end %>
                   <li><hr class="dropdown-divider"></li>
-                  <li><%= link_to "Logout", destroy_user_session_path, data: { turbo_method: :delete }, class: "dropdown-item" %></li>
+                  <li><a class="dropdown-item" href="<%= destroy_user_session_path %>">Logout</a></li>
                 </ul>
               </li>
             <% else %>
               <li class="nav-item">
-                <%= link_to "Login", new_user_session_path, class: "nav-link" %>
+                <a class="nav-link" href="<%= new_user_session_path %>">Login</a>
               </li>
               <li class="nav-item">
-                <%= link_to "Sign Up", new_user_registration_path, class: "nav-link" %>
+                <a class="nav-link" href="<%= new_user_registration_path %>">Sign Up</a>
               </li>
             <% end %>
           </ul>
