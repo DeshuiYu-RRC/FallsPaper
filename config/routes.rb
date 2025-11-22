@@ -1,12 +1,20 @@
 Rails.application.routes.draw do
   # Devise routes for user authentication
-  devise_for :users
+  devise_for :users, controllers: {
+    registrations: "users/registrations",
+    sessions: "users/sessions"
+  }
 
   # ActiveAdmin routes
   ActiveAdmin.routes(self)
 
   # Root route
   root "home#index"
+
+  # Static pages
+  get "about", to: "pages#about"
+  get "contact", to: "pages#contact"
+  post "contact", to: "pages#send_contact"
 
   # Products routes
   resources :products, only: [:index, :show] do
@@ -37,6 +45,9 @@ Rails.application.routes.draw do
 
   # Orders routes (for logged in users)
   resources :orders, only: [:index, :show]
+
+  # User profile
+  resource :profile, only: [:show, :edit, :update]
 
   # Health check
   get "health", to: "health#index"
