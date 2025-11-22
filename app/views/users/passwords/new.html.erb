@@ -1,16 +1,33 @@
-<h2>Forgot your password?</h2>
+<div class="container mt-5">
+  <div class="row justify-content-center">
+    <div class="col-md-5">
+      <div class="card">
+        <div class="card-header">
+          <h4 class="mb-0">Forgot Your Password?</h4>
+        </div>
+        <div class="card-body">
+          <p class="text-muted">Enter your email address and we will send you instructions to reset your password.</p>
+          
+          <%= form_for(resource, as: resource_name, url: password_path(resource_name), html: { method: :post }) do |f| %>
+            <%= render "users/shared/error_messages", resource: resource %>
 
-<%= form_for(resource, as: resource_name, url: password_path(resource_name), html: { method: :post }) do |f| %>
-  <%= render "users/shared/error_messages", resource: resource %>
+            <div class="mb-3">
+              <%= f.label :email, class: "form-label" %>
+              <%= f.email_field :email, autofocus: true, autocomplete: "email", class: "form-control", required: true %>
+            </div>
 
-  <div class="field">
-    <%= f.label :email %><br />
-    <%= f.email_field :email, autofocus: true, autocomplete: "email" %>
+            <div class="d-grid">
+              <%= f.submit "Send Reset Instructions", class: "btn btn-primary" %>
+            </div>
+          <% end %>
+
+          <hr>
+
+          <div class="text-center">
+            <p class="mb-0"><%= link_to "Back to Login", new_session_path(resource_name) %></p>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
-
-  <div class="actions">
-    <%= f.submit "Send me reset password instructions" %>
-  </div>
-<% end %>
-
-<%= render "users/shared/links" %>
+</div>
