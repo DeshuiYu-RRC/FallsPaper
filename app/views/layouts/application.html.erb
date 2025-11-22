@@ -12,7 +12,7 @@
     <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
   </head>
 
-  <body>
+  <body class="d-flex flex-column min-vh-100">
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
       <div class="container">
         <a class="navbar-brand" href="/">Falls Paper</a>
@@ -31,7 +31,10 @@
               <a class="nav-link" href="<%= categories_path %>">Categories</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="/admin">Admin</a>
+              <a class="nav-link" href="<%= about_path %>">About</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="<%= contact_path %>">Contact</a>
             </li>
           </ul>
           <ul class="navbar-nav">
@@ -44,14 +47,20 @@
               </a>
             </li>
             <% if user_signed_in? %>
-              <li class="nav-item">
-                <a class="nav-link" href="<%= orders_path %>">My Orders</a>
-              </li>
-              <li class="nav-item">
-                <span class="nav-link">Hello, <%= current_user.username %></span>
-              </li>
-              <li class="nav-item">
-                <%= link_to "Logout", destroy_user_session_path, data: { turbo_method: :delete }, class: "nav-link" %>
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                  <%= current_user.username %>
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end">
+                  <li><a class="dropdown-item" href="<%= profile_path %>">My Profile</a></li>
+                  <li><a class="dropdown-item" href="<%= orders_path %>">My Orders</a></li>
+                  <% if current_user.admin? %>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="/admin">Admin Panel</a></li>
+                  <% end %>
+                  <li><hr class="dropdown-divider"></li>
+                  <li><%= link_to "Logout", destroy_user_session_path, data: { turbo_method: :delete }, class: "dropdown-item" %></li>
+                </ul>
               </li>
             <% else %>
               <li class="nav-item">
@@ -84,13 +93,39 @@
       </div>
     <% end %>
 
-    <main>
+    <main class="flex-grow-1">
       <%= yield %>
     </main>
 
-    <footer class="bg-dark text-white mt-5 py-4">
-      <div class="container text-center">
-        <p class="mb-0">Falls Paper - <%= Date.current.year %></p>
+    <footer class="bg-dark text-white py-4 mt-auto">
+      <div class="container">
+        <div class="row">
+          <div class="col-md-4">
+            <h5>Falls Paper</h5>
+            <p class="text-muted">Your trusted supplier for quality office paper and printing supplies.</p>
+          </div>
+          <div class="col-md-4">
+            <h5>Quick Links</h5>
+            <ul class="list-unstyled">
+              <li><a href="<%= products_path %>" class="text-muted">Products</a></li>
+              <li><a href="<%= categories_path %>" class="text-muted">Categories</a></li>
+              <li><a href="<%= about_path %>" class="text-muted">About Us</a></li>
+              <li><a href="<%= contact_path %>" class="text-muted">Contact</a></li>
+            </ul>
+          </div>
+          <div class="col-md-4">
+            <h5>Contact</h5>
+            <p class="text-muted">
+              123 Paper Street<br>
+              Winnipeg, MB R3C 1A1<br>
+              (204) 555-0100
+            </p>
+          </div>
+        </div>
+        <hr class="my-3">
+        <div class="text-center text-muted">
+          <p class="mb-0">Falls Paper - <%= Date.current.year %>. All rights reserved.</p>
+        </div>
       </div>
     </footer>
 

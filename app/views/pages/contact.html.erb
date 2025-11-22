@@ -1,0 +1,69 @@
+<div class="container mt-4">
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="/">Home</a></li>
+      <li class="breadcrumb-item active">Contact Us</li>
+    </ol>
+  </nav>
+
+  <div class="row">
+    <div class="col-md-6">
+      <h1>Contact Us</h1>
+      <p class="lead">We would love to hear from you!</p>
+
+      <%= form_tag contact_path, method: :post do %>
+        <div class="mb-3">
+          <label class="form-label">Your Name *</label>
+          <%= text_field_tag :name, nil, class: "form-control", required: true %>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Email Address *</label>
+          <%= email_field_tag :email, nil, class: "form-control", required: true %>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Phone Number</label>
+          <%= text_field_tag :phone, nil, class: "form-control" %>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Subject *</label>
+          <%= text_field_tag :subject, nil, class: "form-control", required: true %>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Message *</label>
+          <%= text_area_tag :message, nil, class: "form-control", rows: 5, required: true %>
+        </div>
+
+        <%= submit_tag "Send Message", class: "btn btn-primary" %>
+      <% end %>
+    </div>
+
+    <div class="col-md-6">
+      <div class="card mb-4">
+        <div class="card-header">
+          <strong>Contact Information</strong>
+        </div>
+        <div class="card-body">
+          <p><strong>Address:</strong><br>
+          123 Paper Street<br>
+          Winnipeg, MB R3C 1A1<br>
+          Canada</p>
+
+          <p><strong>Phone:</strong><br>
+          (204) 555-0100</p>
+
+          <p><strong>Email:</strong><br>
+          info@fallspaper.com</p>
+
+          <p><strong>Business Hours:</strong><br>
+          Monday - Friday: 9:00 AM - 5:00 PM<br>
+          Saturday: 10:00 AM - 2:00 PM<br>
+          Sunday: Closed</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
