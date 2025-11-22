@@ -70,4 +70,25 @@ class CheckoutsController < ApplicationController
 
       redirect_to checkout_success_path
     else
-      flash[:alert] = "Error creating order: #{@order.errors.full_messages.join(,
+      flash[:alert] = "Error creating order: #{@order.errors.full_messages.join(", ")}"
+      redirect_to checkout_path
+    end
+  end
+
+  def success
+    @order = current_user.orders.order(created_at: :desc).first
+  end
+
+  def cancel
+    redirect_to cart_path
+  end
+
+  private
+
+  def check_cart
+    if current_cart.empty?
+      flash[:alert] = "Your cart is empty."
+      redirect_to products_path
+    end
+  end
+end
