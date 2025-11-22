@@ -36,7 +36,9 @@
             </div>
             <div class="card-footer bg-white">
               <% if product.in_stock? %>
-                <%= link_to "Add to Cart", add_cart_path(product_id: product.id), method: :post, class: "btn btn-primary btn-sm w-100" %>
+                <%= form_tag add_cart_path(product_id: product.id), method: :post do %>
+                  <%= submit_tag "Add to Cart", class: "btn btn-primary btn-sm w-100" %>
+                <% end %>
               <% else %>
                 <button class="btn btn-secondary btn-sm w-100" disabled>Out of Stock</button>
               <% end %>
