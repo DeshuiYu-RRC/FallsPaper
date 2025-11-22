@@ -23,7 +23,7 @@ class ApplicationController < ActionController::Base
 
   # Get total items count in cart
   def cart_items_count
-    current_cart.values.sum
+    current_cart.values.map(&:to_i).sum
   end
 
   # Add item to cart
@@ -59,13 +59,16 @@ class ApplicationController < ActionController::Base
   # Get cart items with product details
   def cart_items_with_details
     items = []
+    return items if current_cart.nil? || current_cart.empty?
+    
     current_cart.each do |product_id, quantity|
-      product = Product.find_by(id: product_id)
+      next if quantity.to_i <= 0
+      product = Product.find_by(id: product_id.to_i)
       if product
         items << {
           product: product,
-          quantity: quantity,
-          total: product.current_price * quantity
+          quantity: quantity.to_i,
+          total: (product.current_price * quantity.to_i).round(2)
         }
       end
     end

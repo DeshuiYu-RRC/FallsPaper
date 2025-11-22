@@ -1,6 +1,6 @@
 class CheckoutsController < ApplicationController
   before_action :authenticate_user!
-  before_action :check_cart
+  before_action :check_cart, only: [:show]
 
   def show
     @cart_items = cart_items_with_details
@@ -20,6 +20,7 @@ class CheckoutsController < ApplicationController
   def create
     @cart_items = cart_items_with_details
     @subtotal = cart_subtotal
+    @provinces = Province.order(:name)
 
     if @cart_items.empty?
       flash[:alert] = "Your cart is empty."
@@ -30,7 +31,13 @@ class CheckoutsController < ApplicationController
     
     if province.nil?
       flash[:alert] = "Please select a province."
-      redirect_to checkout_path and return
+      @customer_name = params[:customer_name]
+      @customer_email = params[:customer_email]
+      @customer_phone = params[:customer_phone]
+      @delivery_address = params[:delivery_address]
+      @delivery_city = params[:delivery_city]
+      @delivery_postal_code = params[:delivery_postal_code]
+      render :show and return
     end
 
     taxes = province.calculate_taxes(@subtotal)
@@ -65,13 +72,19 @@ class CheckoutsController < ApplicationController
         )
       end
 
-      # Clear the cart
+      # Clear the cart after successful order
       clear_cart
 
       redirect_to checkout_success_path
     else
-      flash[:alert] = "Error creating order: #{@order.errors.full_messages.join(", ")}"
-      redirect_to checkout_path
+      flash.now[:alert] = "Error creating order: #{@order.errors.full_messages.join(", ")}"
+      @customer_name = params[:customer_name]
+      @customer_email = params[:customer_email]
+      @customer_phone = params[:customer_phone]
+      @delivery_address = params[:delivery_address]
+      @delivery_city = params[:delivery_city]
+      @delivery_postal_code = params[:delivery_postal_code]
+      render :show
     end
   end
 
@@ -86,7 +99,7 @@ class CheckoutsController < ApplicationController
   private
 
   def check_cart
-    if current_cart.empty?
+    if current_cart.nil? || current_cart.empty?
       flash[:alert] = "Your cart is empty."
       redirect_to products_path
     end

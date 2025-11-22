@@ -38,10 +38,10 @@ Rails.application.routes.draw do
   end
 
   # Checkout routes
-  resource :checkout, only: [:show, :create] do
-    get :success
-    get :cancel
-  end
+  get "checkout", to: "checkouts#show"
+  post "checkout", to: "checkouts#create"
+  get "checkout/success", to: "checkouts#success", as: :checkout_success
+  get "checkout/cancel", to: "checkouts#cancel", as: :checkout_cancel
 
   # Orders routes (for logged in users)
   resources :orders, only: [:index, :show]
