@@ -17,10 +17,10 @@
           <div class="card h-100">
             <% if product.image.present? %>
               <a href="<%= product_path(product) %>">
-                <img src="<%= product.image %>" class="card-img-top" alt="<%= product.name %>" style="height: 150px; object-fit: cover;">
+                <img src="<%= product.image %>" class="card-img-top" alt="<%= product.name %>" style="height: 300px; object-fit: cover;">
               </a>
             <% else %>
-              <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 150px;">
+              <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 300px;">
                 <span class="text-muted">No Image</span>
               </div>
             <% end %>
