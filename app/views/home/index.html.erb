@@ -3,7 +3,7 @@
     <div class="container-fluid py-5">
       <h1 class="display-5 fw-bold">Welcome to Falls Paper</h1>
       <p class="col-md-8 fs-4">Your one-stop shop for thermal paper, copy paper, toner cartridges, and more office supplies.</p>
-      <a class="btn btn-primary btn-lg" href="<%= products_path %>">Shop Now</a>
+      <a class="btn btn-primary btn-lg text-white" href="<%= products_path %>">Shop Now</a>
     </div>
   </div>
 
@@ -61,7 +61,7 @@
           <div class="card-footer bg-white">
             <% if product.in_stock? %>
               <%= form_tag add_cart_path(product_id: product.id), method: :post do %>
-                <%= submit_tag "Add to Cart", class: "btn btn-primary btn-sm w-100" %>
+                <%= submit_tag "Add to Cart", class: "btn btn-success btn-sm w-100" %>
               <% end %>
             <% else %>
               <button class="btn btn-secondary btn-sm w-100" disabled>Out of Stock</button>
@@ -73,6 +73,6 @@
   </div>
 
   <div class="text-center mt-3">
-    <%= link_to "View All Products", products_path, class: "btn btn-outline-primary" %>
+    <%= link_to "View All Products", products_path, class: "btn btn-outline-primary mb-5" %>
   </div>
 </div>

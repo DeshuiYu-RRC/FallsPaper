@@ -35,7 +35,7 @@ body {
 
 /* Price styling */
 .price-current {
-  font-size: 1.25rem;
+  font-size: 0.9rem;
   font-weight: bold;
   color: #dc3545;
 }
@@ -135,7 +135,7 @@ footer a:hover {
   }
   
   .navbar-brand {
-    font-size: 1.25rem;
+    font-size: 0.9rem;
   }
   
   h1 {
@@ -215,4 +215,19 @@ footer a:hover {
 .dropdown-item.admin-link {
   color: #dc3545;
   font-weight: 500;
+}
+
+/* Larger pagination */
+.pagination {
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.pagination .page-link {
+  padding: 0.75rem 1rem;
+  font-size: 0.9rem;
+}
+
+.pagination .page-item {
+  margin: 0 0.25rem;
 }
