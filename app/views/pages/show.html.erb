@@ -1,0 +1,56 @@
+<div class="container mt-4">
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="/">Home</a></li>
+      <li class="breadcrumb-item active"><%= @page.title %></li>
+    </ol>
+  </nav>
+
+  <div class="card">
+    <div class="card-body">
+      <h1 class="card-title"><%= @page.title %></h1>
+      <hr>
+      <div class="page-content">
+        <%= raw @page.content %>
+      </div>
+    </div>
+  </div>
+
+  <% if @page.slug == "contact" %>
+    <div class="card mt-4">
+      <div class="card-header">
+        <h3>Send Us a Message</h3>
+      </div>
+      <div class="card-body">
+        <%= form_tag contact_path, method: :post do %>
+          <div class="mb-3">
+            <%= label_tag :name, "Your Name", class: "form-label" %>
+            <%= text_field_tag :name, nil, class: "form-control", required: true %>
+          </div>
+
+          <div class="mb-3">
+            <%= label_tag :email, "Your Email", class: "form-label" %>
+            <%= email_field_tag :email, nil, class: "form-control", required: true %>
+          </div>
+
+          <div class="mb-3">
+            <%= label_tag :phone, "Phone Number", class: "form-label" %>
+            <%= text_field_tag :phone, nil, class: "form-control" %>
+          </div>
+
+          <div class="mb-3">
+            <%= label_tag :subject, "Subject", class: "form-label" %>
+            <%= text_field_tag :subject, nil, class: "form-control", required: true %>
+          </div>
+
+          <div class="mb-3">
+            <%= label_tag :message, "Message", class: "form-label" %>
+            <%= text_area_tag :message, nil, class: "form-control", rows: 6, required: true %>
+          </div>
+
+          <%= submit_tag "Send Message", class: "btn btn-primary" %>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+</div>

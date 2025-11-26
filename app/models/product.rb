@@ -3,75 +3,56 @@ class Product < ApplicationRecord
   belongs_to :products_category, optional: true
   has_one :products_detail, dependent: :destroy
   has_many :order_items, dependent: :restrict_with_error
-
+  
+  # Active Storage for local image upload
+  has_one_attached :product_image
+  
   # Validations
-  validates :name, presence: true, 
-                   uniqueness: true, 
-                   length: { maximum: 255 }
-  validates :stock, presence: true, 
-                    numericality: { only_integer: true, greater_than_or_equal_to: 0 }
-  validates :current_price, presence: true, 
-                            numericality: { greater_than_or_equal_to: 0 }
-  validates :original_price, presence: true, 
-                             numericality: { greater_than_or_equal_to: 0 }
-  validates :bulk_price, presence: true, 
-                         numericality: { greater_than_or_equal_to: 0 }
-
+  validates :name, presence: true, uniqueness: true, length: { maximum: 255 }
+  validates :stock, presence: true, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
+  validates :current_price, presence: true, numericality: { greater_than_or_equal_to: 0.01 }
+  validates :original_price, presence: true, numericality: { greater_than_or_equal_to: 0.01 }
+  validates :bulk_price, presence: true, numericality: { greater_than_or_equal_to: 0.01 }
+  
   # Scopes
   scope :in_stock, -> { where("stock > 0") }
-  scope :out_of_stock, -> { where(stock: 0) }
   scope :on_sale, -> { where("current_price < original_price") }
-  scope :by_category, ->(category_id) { where(products_category_id: category_id) if category_id.present? }
-  scope :recent, -> { where("created_at >= ?", 3.days.ago) }
-  scope :recently_updated, -> { where("updated_at >= ? AND created_at < ?", 3.days.ago, 3.days.ago) }
-  scope :search_by_keyword, ->(keyword) { 
-    where("name LIKE ? OR quantity LIKE ?", "%#{keyword}%", "%#{keyword}%") if keyword.present? 
-  }
-  scope :ordered_by_name, -> { order(:name) }
-  scope :ordered_by_price, -> { order(:current_price) }
-  scope :ordered_by_newest, -> { order(created_at: :desc) }
-
-  # Ransack configuration
+  scope :new_arrivals, -> { where("created_at >= ?", 3.days.ago).where.not(id: recently_updated.pluck(:id)) }
+  scope :recently_updated, -> { where("updated_at >= ? AND updated_at > created_at + INTERVAL 1 HOUR", 3.days.ago) }
+  
+  # Ransackable attributes
   def self.ransackable_attributes(auth_object = nil)
-    ["bulk_price", "created_at", "current_price", "id", "image", "name", "original_price", "products_category_id", "quantity", "stock", "updated_at"]
+    ["name", "current_price", "original_price", "stock", "created_at", "updated_at", "products_category_id"]
   end
-
+  
   def self.ransackable_associations(auth_object = nil)
-    ["products_category", "products_detail", "order_items"]
+    ["products_category", "products_detail"]
   end
-
-  # Check if product is on sale
-  def on_sale?
-    current_price < original_price
-  end
-
-  # Calculate discount percentage
-  def discount_percentage
-    return 0 unless on_sale?
-    ((original_price - current_price) / original_price * 100).round(0)
-  end
-
-  # Check if product is new (created within 3 days)
-  def new_product?
-    created_at >= 3.days.ago
-  end
-
-  # Check if product was recently updated (but not new)
-  def recently_updated?
-    updated_at >= 3.days.ago && created_at < 3.days.ago
-  end
-
-  # Check if in stock
-  def in_stock?
-    stock > 0
-  end
-
-  # Get category name
+  
+  # Helper methods
   def category_name
     products_category&.category_name || "Uncategorized"
   end
-
-  def to_s
-    name
+  
+  def in_stock?
+    stock > 0
+  end
+  
+  def on_sale?
+    current_price < original_price
+  end
+  
+  def discount_percentage
+    return 0 unless on_sale?
+    (((original_price - current_price) / original_price) * 100).round
+  end
+  
+  # Get image URL - prioritize uploaded image, fallback to URL
+  def image_url
+    if product_image.attached?
+      Rails.application.routes.url_helpers.rails_blob_path(product_image, only_path: true)
+    else
+      image
+    end
   end
 end

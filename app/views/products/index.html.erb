@@ -91,9 +91,9 @@
                     <%= product.discount_percentage %>% OFF
                   </span>
                 <% end %>
-                <% if product.image.present? %>
+                <% if product.image_url.present? %>
                   <a href="<%= product_path(product) %>">
-                    <img src="<%= product.image %>" class="card-img-top" alt="<%= product.name %>" style="height: 300px; object-fit: cover;">
+                    <img src="<%= product.image_url %>" class="card-img-top" alt="<%= product.name %>" style="height: 300px; object-fit: cover;">
                   </a>
                 <% else %>
                   <a href="<%= product_path(product) %>">
