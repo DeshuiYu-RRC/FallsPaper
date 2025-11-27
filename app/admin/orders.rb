@@ -96,7 +96,7 @@ ActiveAdmin.register Order do
       f.li "Customer: #{f.object.customer_name}"
       f.li "Email: #{f.object.customer_email}"
       f.li "Current Status: #{f.object.status_name.titleize}"
-      f.li "Total Amount: $#{sprintf(%.2f, f.object.total_amount)}"
+      f.li "Total Amount: $#{sprintf('%.2f', f.object.total_amount)}"
       
       if f.object.stripe_payment_intent_id.present?
         f.li do
