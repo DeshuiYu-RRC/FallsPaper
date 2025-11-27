@@ -1,114 +1,220 @@
 <div class="container mt-4">
-  <nav aria-label="breadcrumb">
-    <ol class="breadcrumb">
-      <li class="breadcrumb-item"><a href="/">Home</a></li>
-      <li class="breadcrumb-item"><a href="<%= cart_path %>">Cart</a></li>
-      <li class="breadcrumb-item active">Checkout</li>
-    </ol>
-  </nav>
-
   <h2>Checkout</h2>
 
   <div class="row">
-    <div class="col-md-8 mb-4">
-      <%= form_tag checkout_path, method: :post do %>
-        <div class="card mb-4">
-          <div class="card-header">
-            <strong>Contact Information</strong>
-          </div>
-          <div class="card-body">
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <label class="form-label">Name *</label>
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-header">
+          <h4>Checkout Information</h4>
+        </div>
+        <div class="card-body">
+          <%= form_tag "#", id: "checkout-form" do %>
+            <h5>Contact Information</h5>
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <%= label_tag :customer_name, "Full Name", class: "form-label" %>
                 <%= text_field_tag :customer_name, @customer_name, class: "form-control", required: true %>
               </div>
-              <div class="col-md-6 mb-3">
-                <label class="form-label">Email *</label>
+              <div class="col-md-6">
+                <%= label_tag :customer_email, "Email", class: "form-label" %>
                 <%= email_field_tag :customer_email, @customer_email, class: "form-control", required: true %>
               </div>
             </div>
+
             <div class="mb-3">
-              <label class="form-label">Phone *</label>
+              <%= label_tag :customer_phone, "Phone Number", class: "form-label" %>
               <%= text_field_tag :customer_phone, @customer_phone, class: "form-control", required: true %>
             </div>
-          </div>
-        </div>
 
-        <div class="card mb-4">
-          <div class="card-header">
-            <strong>Delivery Address</strong>
-          </div>
-          <div class="card-body">
+            <hr>
+
+            <h5>Delivery Address</h5>
             <div class="mb-3">
-              <label class="form-label">Address *</label>
+              <%= label_tag :delivery_address, "Street Address", class: "form-label" %>
               <%= text_field_tag :delivery_address, @delivery_address, class: "form-control", required: true %>
             </div>
-            <div class="row">
-              <div class="col-md-4 mb-3">
-                <label class="form-label">City *</label>
+
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <%= label_tag :delivery_city, "City", class: "form-label" %>
                 <%= text_field_tag :delivery_city, @delivery_city, class: "form-control", required: true %>
               </div>
-              <div class="col-md-4 mb-3">
-                <label class="form-label">Province *</label>
-                <%= select_tag :province_id, 
-                    options_from_collection_for_select(@provinces, :id, :name, @province&.id),
-                    include_blank: "Select Province",
-                    class: "form-select",
-                    required: true %>
-              </div>
-              <div class="col-md-4 mb-3">
-                <label class="form-label">Postal Code *</label>
+              <div class="col-md-6">
+                <%= label_tag :delivery_postal_code, "Postal Code", class: "form-label" %>
                 <%= text_field_tag :delivery_postal_code, @delivery_postal_code, class: "form-control", required: true %>
               </div>
             </div>
-          </div>
-        </div>
 
-        <div class="card mb-4">
-          <div class="card-header">
-            <strong>Order Notes (Optional)</strong>
-          </div>
-          <div class="card-body">
-            <%= text_area_tag :customer_notes, "", class: "form-control", rows: 3, placeholder: "Any special instructions for your order..." %>
-          </div>
-        </div>
+            <div class="mb-3">
+              <%= label_tag :province_id, "Province", class: "form-label" %>
+              <%= select_tag :province_id, options_from_collection_for_select(@provinces, :id, :name, @province&.id), 
+                  include_blank: "Select Province", class: "form-select", required: true %>
+            </div>
 
-        <div class="d-flex justify-content-between">
-          <%= link_to "Back to Cart", cart_path, class: "btn btn-outline-secondary" %>
-          <%= submit_tag "Place Order", class: "btn btn-primary btn-lg" %>
+            <hr>
+
+            <h5>Payment Information</h5>
+            
+            <!-- TEST CARD INFORMATION -->
+            <div class="alert alert-info mb-3">
+              <h6 class="alert-heading"><i class="bi bi-credit-card"></i> Test Card Information</h6>
+              <p class="mb-2"><strong>Card Number:</strong></p>
+              <div class="input-group mb-2">
+                <input type="text" class="form-control" value="4242 4242 4242 4242" id="test-card-number" readonly>
+                <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard('4242424242424242')">
+                  Copy
+                </button>
+              </div>
+              <p class="mb-1"><strong>Expiry:</strong> Any future date (e.g., 12/28)</p>
+              <p class="mb-1"><strong>CVC:</strong> Any 3 digits (e.g., 123)</p>
+              <p class="mb-0 small text-muted">This is a Stripe test environment. No real charges will be made.</p>
+            </div>
+
+            <div id="card-element" class="form-control mb-3" style="padding: 12px;"></div>
+            <div id="card-errors" class="text-danger mb-3"></div>
+
+            <hr>
+
+            <div class="mb-3">
+              <%= label_tag :customer_notes, "Order Notes (Optional)", class: "form-label" %>
+              <%= text_area_tag :customer_notes, nil, class: "form-control", rows: 3, placeholder: "Any special instructions?" %>
+            </div>
+
+            <%= button_tag "Place Order & Pay", class: "btn btn-success btn-lg w-100", id: "submit-button" %>
+          <% end %>
         </div>
-      <% end %>
+      </div>
     </div>
 
     <div class="col-md-4">
       <div class="card">
         <div class="card-header">
-          <strong>Order Summary</strong>
+          <h5>Order Summary</h5>
         </div>
         <div class="card-body">
           <% @cart_items.each do |item| %>
             <div class="d-flex justify-content-between mb-2">
-              <span><%= item[:product].name.truncate(25) %> x <%= item[:quantity] %></span>
+              <span><%= item[:product].name.truncate(30) %> × <%= item[:quantity] %></span>
               <span>$<%= number_with_precision(item[:total], precision: 2) %></span>
             </div>
           <% end %>
           <hr>
           <div class="d-flex justify-content-between mb-2">
-            <span>Subtotal:</span>
-            <span>$<%= number_with_precision(@subtotal, precision: 2) %></span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <span>Tax:</span>
-            <span>Based on province</span>
-          </div>
-          <hr>
-          <div class="d-flex justify-content-between">
             <strong>Subtotal:</strong>
             <strong>$<%= number_with_precision(@subtotal, precision: 2) %></strong>
           </div>
-          <small class="text-muted">Final total with tax will be shown after province selection.</small>
+          <div class="d-flex justify-content-between text-muted small">
+            <span>Taxes (calculated at checkout)</span>
+            <span>-</span>
+          </div>
+          <hr>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>Total Items:</strong>
+            <strong><%= @cart_items.sum { |item| item[:quantity] } %></strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mt-3">
+        <div class="card-body">
+          <small class="text-muted">
+            <i class="bi bi-shield-check"></i> Secure payment powered by Stripe
+          </small>
         </div>
       </div>
     </div>
   </div>
 </div>
+
+<script src="https://js.stripe.com/v3/"></script>
+<script>
+  // Copy to clipboard function
+  function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(function() {
+      alert("Card number copied to clipboard!");
+    }, function(err) {
+      console.error("Could not copy text: ", err);
+    });
+  }
+
+  const stripe = Stripe("<%= Rails.configuration.stripe[:publishable_key] %>");
+  const elements = stripe.elements();
+  const cardElement = elements.create("card", {
+    style: {
+      base: {
+        fontSize: "16px",
+        color: "#32325d",
+        fontFamily: "-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif",
+        "::placeholder": {
+          color: "#aab7c4"
+        }
+      }
+    }
+  });
+  cardElement.mount("#card-element");
+
+  cardElement.on("change", function(event) {
+    const displayError = document.getElementById("card-errors");
+    if (event.error) {
+      displayError.textContent = event.error.message;
+    } else {
+      displayError.textContent = "";
+    }
+  });
+
+  const form = document.getElementById("checkout-form");
+  const submitButton = document.getElementById("submit-button");
+
+  form.addEventListener("submit", async function(event) {
+    event.preventDefault();
+    submitButton.disabled = true;
+    submitButton.innerHTML = "<span class=\"spinner-border spinner-border-sm\" role=\"status\" aria-hidden=\"true\"></span> Processing...";
+
+    // Get form data
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData);
+
+    try {
+      // Create order and payment intent
+      const response = await fetch("/payments", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": document.querySelector("[name=csrf-token]").content
+        },
+        body: JSON.stringify(data)
+      });
+
+      const result = await response.json();
+
+      if (result.error) {
+        throw new Error(result.error);
+      }
+
+      // Confirm payment with Stripe
+      const {error, paymentIntent} = await stripe.confirmCardPayment(result.clientSecret, {
+        payment_method: {
+          card: cardElement,
+          billing_details: {
+            name: data.customer_name,
+            email: data.customer_email,
+            phone: data.customer_phone
+          }
+        }
+      });
+
+      if (error) {
+        document.getElementById("card-errors").textContent = error.message;
+        submitButton.disabled = false;
+        submitButton.textContent = "Place Order & Pay";
+      } else if (paymentIntent.status === "succeeded") {
+        // Redirect to success page
+        window.location.href = "/payments/success?order_id=" + result.order_id;
+      }
+    } catch (error) {
+      document.getElementById("card-errors").textContent = error.message;
+      submitButton.disabled = false;
+      submitButton.textContent = "Place Order & Pay";
+    }
+  });
+</script>

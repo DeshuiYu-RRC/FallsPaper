@@ -39,9 +39,11 @@ Rails.application.routes.draw do
 
   # Checkout routes
   get "checkout", to: "checkouts#show"
-  post "checkout", to: "checkouts#create"
-  get "checkout/success", to: "checkouts#success", as: :checkout_success
-  get "checkout/cancel", to: "checkouts#cancel", as: :checkout_cancel
+
+  # Payment routes
+  post "payments", to: "payments#create"
+  get "payments/success", to: "payments#success"
+  post "payments/webhook", to: "payments#webhook"
 
   # Orders routes (for logged in users)
   resources :orders, only: [:index, :show]

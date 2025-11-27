@@ -1,0 +1,1129 @@
+diff --git a/.gitignore b/.gitignore
+index a20e6d6..a97e4f5 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -39,4 +39,6 @@
+ 
+ /node_modules
+ 
+-.idea
+\ No newline at end of file
++.idea.env
++
++.idea/
+\ No newline at end of file
+diff --git a/Gemfile b/Gemfile
+index e2bb31f..ce79ac6 100644
+--- a/Gemfile
++++ b/Gemfile
+@@ -66,3 +66,4 @@ group :test do
+   gem "capybara"
+   gem "selenium-webdriver"
+ end
++gem 'stripe'
+diff --git a/Gemfile.lock b/Gemfile.lock
+index 3b5fd99..a64fb72 100644
+--- a/Gemfile.lock
++++ b/Gemfile.lock
+@@ -370,6 +370,7 @@ GEM
+     stimulus-rails (1.3.4)
+       railties (>= 6.0.0)
+     stringio (3.1.8)
++    stripe (18.0.1)
+     thor (1.4.0)
+     tilt (2.6.1)
+     timeout (0.4.4)
+@@ -427,6 +428,7 @@ DEPENDENCIES
+   selenium-webdriver
+   sprockets-rails
+   stimulus-rails
++  stripe
+   turbo-rails
+   tzinfo-data
+   web-console
+diff --git a/README.md b/README.md
+index 8babef1..c0ae185 100644
+--- a/README.md
++++ b/README.md
+@@ -123,3 +123,34 @@ The application supports GST, PST, and HST calculations for all Canadian provinc
+ ## License
+ 
+ This project is for educational purposes.
++
++## Environment Variables
++
++This project uses environment variables for sensitive data like API keys.
++
++### Setup
++
++1. Copy the example environment file:
++```bash
++   cp .env.example .env
++```
++
++2. Edit `.env` and add your Stripe test keys:
++```
++   STRIPE_PUBLISHABLE_KEY=pk_test_your_key_here
++   STRIPE_SECRET_KEY=sk_test_your_key_here
++```
++
++3. Restart Docker containers:
++```bash
++   docker-compose restart web
++```
++
++### Getting Stripe Test Keys
++
++1. Go to https://dashboard.stripe.com/
++2. Make sure you're in **Test Mode** (toggle in the left sidebar)
++3. Go to Developers → API keys
++4. Copy your **Publishable key** and **Secret key**
++
++**Note:** Never commit the `.env` file to version control!
+diff --git a/app/admin/orders.rb b/app/admin/orders.rb
+index e302e25..4eaaa4f 100644
+--- a/app/admin/orders.rb
++++ b/app/admin/orders.rb
+@@ -1,78 +1,65 @@
+-# app/admin/orders.rb
+ ActiveAdmin.register Order do
+-  menu priority: 4, label: "Orders"
+-
+-  permit_params :order_number, :user_id, :customer_name, :customer_phone, :customer_email,
+-                :delivery_address, :delivery_city, :delivery_postal_code,
+-                :subtotal, :tax_gst, :tax_pst, :tax_amount, :delivery_fee, :total_amount,
+-                :order_status_id, :customer_notes, :admin_notes,
+-                order_items_attributes: [:id, :product_id, :product_name, :quantity, :unit_price, :total_price, :_destroy]
+-
+-  filter :order_number
+-  filter :customer_name
+-  filter :customer_phone
+-  filter :order_status
+-  filter :user
+-  filter :created_at
+-
+-  scope :all, default: true
+-  scope :pending
+-  scope :confirmed
+-  scope :delivered
+-  scope :cancelled
++  permit_params :order_status_id
+ 
+   index do
+     selectable_column
+     id_column
+-    column :order_number do |order|
+-      link_to order.order_number, admin_order_path(order)
+-    end
++    column :order_number
+     column :customer_name
+-    column :customer_phone
++    column :customer_email
++    column "Status" do |order|
++      status_tag order.status_name, class: order.status_badge_class
++    end
+     column :total_amount do |order|
+       number_to_currency(order.total_amount)
+     end
+-    column :order_status
++    column "Payment" do |order|
++      if order.stripe_payment_intent_id.present?
++        link_to "View in Stripe", "https://dashboard.stripe.com/test/payments/#{order.stripe_payment_intent_id}", target: "_blank"
++      else
++        "No payment"
++      end
++    end
+     column :created_at
+     actions
+   end
+ 
++  filter :order_number
++  filter :customer_name
++  filter :customer_email
++  filter :order_status
++  filter :created_at
++
+   show do
+     attributes_table do
++      row :id
+       row :order_number
+-      row :user
+       row :customer_name
+-      row :customer_phone
+       row :customer_email
+-      row "Delivery Address" do |order|
+-        order.full_delivery_address
++      row :customer_phone
++      row :delivery_address
++      row :delivery_city
++      row :delivery_postal_code
++      row "Status" do |order|
++        status_tag order.status_name, class: order.status_badge_class
+       end
+-      row :order_status
+-      row :customer_notes
+-      row :admin_notes
+-    end
+-
+-    panel "Order Summary" do
+-      attributes_table_for order do
+-        row :subtotal do |o|
+-          number_to_currency(o.subtotal)
+-        end
+-        row "GST" do |o|
+-          number_to_currency(o.tax_gst)
+-        end
+-        row "PST" do |o|
+-          number_to_currency(o.tax_pst)
+-        end
+-        row "Total Tax" do |o|
+-          number_to_currency(o.tax_amount)
+-        end
+-        row :delivery_fee do |o|
+-          number_to_currency(o.delivery_fee)
+-        end
+-        row :total_amount do |o|
+-          strong number_to_currency(o.total_amount)
+-        end
++      row :subtotal do |order|
++        number_to_currency(order.subtotal)
++      end
++      row :tax_gst do |order|
++        number_to_currency(order.tax_gst)
+       end
++      row :tax_pst do |order|
++        number_to_currency(order.tax_pst)
++      end
++      row :total_amount do |order|
++        number_to_currency(order.total_amount)
++      end
++      row :stripe_payment_intent_id
++      row :stripe_payment_status
++      row :created_at
++      row :confirmed_at
++      row :shipped_at
+     end
+ 
+     panel "Order Items" do
+@@ -88,110 +75,47 @@ ActiveAdmin.register Order do
+       end
+     end
+ 
+-    panel "Timeline" do
+-      attributes_table_for order do
+-        row :created_at
+-        row :confirmed_at
+-        row :shipped_at
+-        row :delivered_at
+-        row :updated_at
++    panel "Stripe Payment" do
++      if order.stripe_payment_intent_id.present?
++        para link_to "View Payment in Stripe Dashboard", "https://dashboard.stripe.com/test/payments/#{order.stripe_payment_intent_id}", target: "_blank", class: "button"
++      else
++        para "No Stripe payment associated"
+       end
+     end
+ 
+-    panel "Actions" do
+-      div do
+-        if order.pending?
+-          span link_to "Confirm Order", confirm_admin_order_path(order), method: :put, class: "button"
+-          span link_to "Cancel Order", cancel_admin_order_path(order), method: :put, class: "button", data: { confirm: "Are you sure?" }
+-        elsif order.confirmed?
+-          span link_to "Mark as Shipped/Delivered", ship_admin_order_path(order), method: :put, class: "button"
+-          span link_to "Cancel Order", cancel_admin_order_path(order), method: :put, class: "button", data: { confirm: "Are you sure?" }
+-        end
+-      end
+-    end
++    active_admin_comments
+   end
+ 
+   form do |f|
+-    f.semantic_errors
+-
+-    f.inputs "Customer Information" do
+-      f.input :user, as: :select, collection: User.all.map { |u| [u.username, u.id] }
+-      f.input :customer_name
+-      f.input :customer_phone
+-      f.input :customer_email
+-    end
+-
+-    f.inputs "Delivery Information" do
+-      f.input :delivery_address
+-      f.input :delivery_city
+-      f.input :delivery_postal_code
+-    end
+-
+-    f.inputs "Order Details" do
+-      f.input :order_status, as: :select, collection: OrderStatus.ordered.map { |s| [s.status_name.titleize, s.id] }
+-      f.input :subtotal
+-      f.input :tax_gst, label: "GST"
+-      f.input :tax_pst, label: "PST"
+-      f.input :tax_amount, label: "Total Tax"
+-      f.input :delivery_fee
+-      f.input :total_amount
+-    end
+-
+-    f.inputs "Notes" do
+-      f.input :customer_notes, as: :text
+-      f.input :admin_notes, as: :text
+-    end
+-
+-    f.inputs "Order Items" do
+-      f.has_many :order_items, heading: false, allow_destroy: true, new_record: "Add Item" do |item|
+-        item.input :product, as: :select, collection: Product.all.map { |p| [p.name.truncate(50), p.id] }
+-        item.input :product_name
+-        item.input :quantity
+-        item.input :unit_price
+-        item.input :total_price
++    f.inputs "Change Order Status" do
++      f.input :order_status, as: :select, collection: OrderStatus.order(:status_order).map { |s| [s.status_name.titleize, s.id] }
++    end
++    
++    f.inputs "Order Information (Read Only)" do
++      f.li "Order Number: #{f.object.order_number}"
++      f.li "Customer: #{f.object.customer_name}"
++      f.li "Email: #{f.object.customer_email}"
++      f.li "Current Status: #{f.object.status_name.titleize}"
++      f.li "Total Amount: $#{sprintf(%.2f, f.object.total_amount)}"
++      
++      if f.object.stripe_payment_intent_id.present?
++        f.li do
++          link_to "View in Stripe Dashboard", "https://dashboard.stripe.com/test/payments/#{f.object.stripe_payment_intent_id}", target: "_blank", class: "button"
++        end
+       end
+     end
+-
++    
+     f.actions
+   end
+ 
+-  # Custom actions for order status
+-  member_action :confirm, method: :put do
+-    if resource.confirm!
+-      redirect_to admin_order_path(resource), notice: "Order has been confirmed."
+-    else
+-      redirect_to admin_order_path(resource), alert: "Could not confirm order."
+-    end
++  # Action to mark as shipped
++  action_item :mark_shipped, only: :show, if: proc { order.paid? } do
++    link_to "Mark as Shipped", mark_shipped_admin_order_path(order), method: :put, data: { confirm: "Mark this order as shipped?" }
+   end
+ 
+-  member_action :ship, method: :put do
+-    if resource.ship!
+-      redirect_to admin_order_path(resource), notice: "Order has been marked as shipped/delivered."
+-    else
+-      redirect_to admin_order_path(resource), alert: "Could not ship order."
+-    end
+-  end
+-
+-  member_action :cancel, method: :put do
+-    if resource.cancel!
+-      redirect_to admin_order_path(resource), notice: "Order has been cancelled."
+-    else
+-      redirect_to admin_order_path(resource), alert: "Could not cancel order."
+-    end
+-  end
+-
+-  # Batch actions
+-  batch_action :confirm do |ids|
+-    batch_action_collection.find(ids).each do |order|
+-      order.confirm!
+-    end
+-    redirect_to collection_path, notice: "Orders have been confirmed."
+-  end
+-
+-  batch_action :cancel do |ids|
+-    batch_action_collection.find(ids).each do |order|
+-      order.cancel!
+-    end
+-    redirect_to collection_path, notice: "Orders have been cancelled."
++  member_action :mark_shipped, method: :put do
++    order = Order.find(params[:id])
++    order.mark_as_shipped!
++    redirect_to admin_order_path(order), notice: "Order marked as shipped!"
+   end
+ end
+diff --git a/app/controllers/payments_controller.rb b/app/controllers/payments_controller.rb
+new file mode 100644
+index 0000000..7b151f4
+--- /dev/null
++++ b/app/controllers/payments_controller.rb
+@@ -0,0 +1,135 @@
++class PaymentsController < ApplicationController
++  before_action :authenticate_user!
++  skip_before_action :verify_authenticity_token, only: [:webhook]
++
++  def create
++    @cart_items = cart_items_with_details
++    @subtotal = cart_subtotal
++
++    if @cart_items.empty?
++      flash[:alert] = "Your cart is empty."
++      redirect_to cart_path and return
++    end
++
++    province = Province.find_by(id: params[:province_id])
++    
++    if province.nil?
++      flash[:alert] = "Please select a province."
++      redirect_to checkout_path and return
++    end
++
++    taxes = province.calculate_taxes(@subtotal)
++    total_amount = @subtotal + taxes[:total]
++
++    # Create the order first (pending status)
++    @order = Order.new(
++      user: current_user,
++      customer_name: params[:customer_name],
++      customer_phone: params[:customer_phone],
++      customer_email: params[:customer_email],
++      delivery_address: params[:delivery_address],
++      delivery_city: params[:delivery_city],
++      delivery_postal_code: params[:delivery_postal_code],
++      subtotal: @subtotal,
++      tax_gst: taxes[:gst],
++      tax_pst: taxes[:pst],
++      tax_amount: taxes[:total],
++      delivery_fee: 0,
++      total_amount: total_amount,
++      order_status: OrderStatus.find_by(status_name: "pending"),
++      customer_notes: params[:customer_notes]
++    )
++
++    if @order.save
++      # Create order items
++      @cart_items.each do |item|
++        @order.order_items.create(
++          product: item[:product],
++          product_name: item[:product].name,
++          quantity: item[:quantity],
++          unit_price: item[:product].current_price,
++          total_price: item[:total]
++        )
++      end
++
++      # Create Stripe Payment Intent
++      begin
++        payment_intent = Stripe::PaymentIntent.create({
++          amount: (total_amount * 100).to_i, # Amount in cents
++          currency: "cad",
++          metadata: {
++            order_id: @order.id,
++            order_number: @order.order_number
++          },
++          description: "Order #{@order.order_number}"
++        })
++
++        # Store payment intent ID
++        @order.update(stripe_payment_intent_id: payment_intent.id)
++
++        render json: {
++          clientSecret: payment_intent.client_secret,
++          order_id: @order.id
++        }
++      rescue Stripe::StripeError => e
++        @order.destroy
++        render json: { error: e.message }, status: :unprocessable_entity
++      end
++    else
++      render json: { error: @order.errors.full_messages.join(", ") }, status: :unprocessable_entity
++    end
++  end
++
++  def success
++    @order = current_user.orders.find(params[:order_id])
++    
++    # Verify payment with Stripe
++    if @order.stripe_payment_intent_id.present?
++      begin
++        payment_intent = Stripe::PaymentIntent.retrieve(@order.stripe_payment_intent_id)
++        
++        if payment_intent.status == "succeeded" && @order.pending?
++          @order.mark_as_paid!(@order.stripe_payment_intent_id)
++          clear_cart
++        end
++      rescue Stripe::StripeError => e
++        Rails.logger.error "Stripe error: #{e.message}"
++      end
++    end
++  end
++
++  # Stripe webhook for payment confirmation
++  def webhook
++    payload = request.body.read
++    sig_header = request.env["HTTP_STRIPE_SIGNATURE"]
++    endpoint_secret = ENV["STRIPE_WEBHOOK_SECRET"]
++
++    begin
++      event = Stripe::Webhook.construct_event(
++        payload, sig_header, endpoint_secret
++      )
++    rescue JSON::ParserError, Stripe::SignatureVerificationError => e
++      render json: { error: "Webhook error" }, status: :bad_request and return
++    end
++
++    # Handle the event
++    case event.type
++    when "payment_intent.succeeded"
++      payment_intent = event.data.object
++      order = Order.find_by(stripe_payment_intent_id: payment_intent.id)
++      
++      if order && order.pending?
++        order.mark_as_paid!(payment_intent.id)
++      end
++    when "payment_intent.payment_failed"
++      payment_intent = event.data.object
++      order = Order.find_by(stripe_payment_intent_id: payment_intent.id)
++      
++      if order
++        order.update(stripe_payment_status: "failed")
++      end
++    end
++
++    render json: { message: "Success" }
++  end
++end
+diff --git a/app/models/order.rb b/app/models/order.rb
+index 33b0cc1..d99c4a6 100644
+--- a/app/models/order.rb
++++ b/app/models/order.rb
+@@ -1,101 +1,108 @@
+ class Order < ApplicationRecord
+   # Associations
+   belongs_to :user
+-  belongs_to :order_status
+-  has_many :order_items, dependent: :destroy
++  belongs_to :order_status, optional: true
+ 
+-  # Nested attributes for order items
+-  accepts_nested_attributes_for :order_items, allow_destroy: true
++  has_many :order_items, dependent: :destroy
+ 
+   # Validations
+   validates :order_number, presence: true, uniqueness: true
+-  validates :customer_name, presence: true, length: { maximum: 100 }
+-  validates :customer_phone, presence: true, length: { maximum: 20 }
+-  validates :customer_email, length: { maximum: 100 }, allow_blank: true,
+-            format: { with: URI::MailTo::EMAIL_REGEXP, allow_blank: true }
++  validates :customer_name, presence: true
++  validates :customer_phone, presence: true
++  validates :customer_email, presence: true
+   validates :delivery_address, presence: true
+-  validates :delivery_city, length: { maximum: 50 }, allow_blank: true
+-  validates :delivery_postal_code, length: { maximum: 10 }, allow_blank: true
+   validates :subtotal, presence: true, numericality: { greater_than_or_equal_to: 0 }
+   validates :total_amount, presence: true, numericality: { greater_than_or_equal_to: 0 }
+ 
+   # Callbacks
+   before_validation :generate_order_number, on: :create
+ 
+-  # Scopes
+-  scope :recent, -> { order(created_at: :desc) }
+-  scope :by_status, ->(status_id) { where(order_status_id: status_id) if status_id.present? }
+-  scope :pending, -> { joins(:order_status).where(order_statuses: { status_name: OrderStatus::PENDING }) }
+-  scope :confirmed, -> { joins(:order_status).where(order_statuses: { status_name: OrderStatus::CONFIRMED }) }
+-  scope :delivered, -> { joins(:order_status).where(order_statuses: { status_name: OrderStatus::DELIVERED }) }
+-  scope :cancelled, -> { joins(:order_status).where(order_statuses: { status_name: OrderStatus::CANCELLED }) }
+-
+-  # Ransack configuration
++  # Ransackable attributes
+   def self.ransackable_attributes(auth_object = nil)
+-    ["admin_notes", "confirmed_at", "created_at", "customer_email", "customer_name", "customer_notes", "customer_phone", "delivered_at", "delivery_address", "delivery_city", "delivery_fee", "delivery_postal_code", "id", "order_number", "order_status_id", "shipped_at", "subtotal", "tax_amount", "tax_gst", "tax_pst", "total_amount", "updated_at", "user_id"]
++    ["order_number", "customer_name", "customer_phone", "customer_email", 
++     "total_amount", "created_at", "updated_at", "order_status_id", "user_id"]
+   end
+ 
+   def self.ransackable_associations(auth_object = nil)
+-    ["order_items", "order_status", "user"]
++    ["user", "order_status", "order_items"]
+   end
+ 
+-  # Generate unique order number
+-  def generate_order_number
+-    return if order_number.present?
+-    
+-    date_part = Time.current.strftime("%Y%m%d")
+-    random_part = SecureRandom.hex(3).upcase
+-    self.order_number = "ORD#{date_part}#{random_part}"
++  # Status helpers
++  def self.pending_status
++    OrderStatus.find_by(status_name: "pending") || OrderStatus.find_by(id: 1)
+   end
+ 
+-  # Status helpers
+-  def pending?
+-    order_status&.status_name == OrderStatus::PENDING
++  def self.paid_status
++    OrderStatus.find_by(status_name: "paid") || OrderStatus.find_by(id: 2)
+   end
+ 
+-  def confirmed?
+-    order_status&.status_name == OrderStatus::CONFIRMED
++  def self.shipped_status
++    OrderStatus.find_by(status_name: "shipped") || OrderStatus.find_by(id: 3)
+   end
+ 
+-  def delivered?
+-    order_status&.status_name == OrderStatus::DELIVERED
++  def self.cancelled_status
++    OrderStatus.find_by(status_name: "cancelled") || OrderStatus.find_by(id: 4)
+   end
+ 
+-  def cancelled?
+-    order_status&.status_name == OrderStatus::CANCELLED
++  def pending?
++    order_status&.status_name == "pending"
+   end
+ 
+-  # Status transitions
+-  def confirm!
+-    return false unless pending?
+-    update(order_status: OrderStatus.confirmed_status, confirmed_at: Time.current)
++  def paid?
++    order_status&.status_name == "paid"
+   end
+ 
+-  def ship!
+-    return false unless confirmed?
+-    update(order_status: OrderStatus.delivered_status, shipped_at: Time.current)
++  def shipped?
++    order_status&.status_name == "shipped"
+   end
+ 
+-  def deliver!
+-    update(delivered_at: Time.current) if delivered?
++  def cancelled?
++    order_status&.status_name == "cancelled"
+   end
+ 
+-  def cancel!
+-    return false if delivered?
+-    update(order_status: OrderStatus.cancelled_status)
++  def status_name
++    order_status&.status_name || "unknown"
+   end
+ 
+-  # Get full delivery address
+-  def full_delivery_address
+-    [delivery_address, delivery_city, delivery_postal_code].compact.reject(&:blank?).join(", ")
++  def status_badge_class
++    case status_name
++    when "pending" then "warning"
++    when "paid" then "success"
++    when "shipped" then "info"
++    when "cancelled" then "danger"
++    else "secondary"
++    end
+   end
+ 
+-  # Item count
+-  def item_count
+-    order_items.sum(:quantity)
++  # Mark order as paid
++  def mark_as_paid!(payment_intent_id)
++    paid_status = Order.paid_status
++    if paid_status
++      update!(
++        order_status_id: paid_status.id,
++        stripe_payment_intent_id: payment_intent_id,
++        stripe_payment_status: "succeeded",
++        confirmed_at: Time.current
++      )
++    else
++      Rails.logger.error "Paid status not found!"
++    end
+   end
+ 
+-  def to_s
+-    order_number
++  # Mark order as shipped
++  def mark_as_shipped!
++    shipped_status = Order.shipped_status
++    if shipped_status
++      update!(
++        order_status_id: shipped_status.id,
++        shipped_at: Time.current
++      )
++    end
++  end
++
++  private
++
++  def generate_order_number
++    self.order_number ||= "ORD#{Time.current.strftime("%Y%m%d")}#{SecureRandom.hex(4).upcase}"
+   end
+ end
+diff --git a/app/views/checkouts/show.html.erb b/app/views/checkouts/show.html.erb
+index e5769f5..3218277 100644
+--- a/app/views/checkouts/show.html.erb
++++ b/app/views/checkouts/show.html.erb
+@@ -1,114 +1,220 @@
+ <div class="container mt-4">
+-  <nav aria-label="breadcrumb">
+-    <ol class="breadcrumb">
+-      <li class="breadcrumb-item"><a href="/">Home</a></li>
+-      <li class="breadcrumb-item"><a href="<%= cart_path %>">Cart</a></li>
+-      <li class="breadcrumb-item active">Checkout</li>
+-    </ol>
+-  </nav>
+-
+   <h2>Checkout</h2>
+ 
+   <div class="row">
+-    <div class="col-md-8 mb-4">
+-      <%= form_tag checkout_path, method: :post do %>
+-        <div class="card mb-4">
+-          <div class="card-header">
+-            <strong>Contact Information</strong>
+-          </div>
+-          <div class="card-body">
+-            <div class="row">
+-              <div class="col-md-6 mb-3">
+-                <label class="form-label">Name *</label>
++    <div class="col-md-8">
++      <div class="card">
++        <div class="card-header">
++          <h4>Checkout Information</h4>
++        </div>
++        <div class="card-body">
++          <%= form_tag "#", id: "checkout-form" do %>
++            <h5>Contact Information</h5>
++            <div class="row mb-3">
++              <div class="col-md-6">
++                <%= label_tag :customer_name, "Full Name", class: "form-label" %>
+                 <%= text_field_tag :customer_name, @customer_name, class: "form-control", required: true %>
+               </div>
+-              <div class="col-md-6 mb-3">
+-                <label class="form-label">Email *</label>
++              <div class="col-md-6">
++                <%= label_tag :customer_email, "Email", class: "form-label" %>
+                 <%= email_field_tag :customer_email, @customer_email, class: "form-control", required: true %>
+               </div>
+             </div>
++
+             <div class="mb-3">
+-              <label class="form-label">Phone *</label>
++              <%= label_tag :customer_phone, "Phone Number", class: "form-label" %>
+               <%= text_field_tag :customer_phone, @customer_phone, class: "form-control", required: true %>
+             </div>
+-          </div>
+-        </div>
+ 
+-        <div class="card mb-4">
+-          <div class="card-header">
+-            <strong>Delivery Address</strong>
+-          </div>
+-          <div class="card-body">
++            <hr>
++
++            <h5>Delivery Address</h5>
+             <div class="mb-3">
+-              <label class="form-label">Address *</label>
++              <%= label_tag :delivery_address, "Street Address", class: "form-label" %>
+               <%= text_field_tag :delivery_address, @delivery_address, class: "form-control", required: true %>
+             </div>
+-            <div class="row">
+-              <div class="col-md-4 mb-3">
+-                <label class="form-label">City *</label>
++
++            <div class="row mb-3">
++              <div class="col-md-6">
++                <%= label_tag :delivery_city, "City", class: "form-label" %>
+                 <%= text_field_tag :delivery_city, @delivery_city, class: "form-control", required: true %>
+               </div>
+-              <div class="col-md-4 mb-3">
+-                <label class="form-label">Province *</label>
+-                <%= select_tag :province_id, 
+-                    options_from_collection_for_select(@provinces, :id, :name, @province&.id),
+-                    include_blank: "Select Province",
+-                    class: "form-select",
+-                    required: true %>
+-              </div>
+-              <div class="col-md-4 mb-3">
+-                <label class="form-label">Postal Code *</label>
++              <div class="col-md-6">
++                <%= label_tag :delivery_postal_code, "Postal Code", class: "form-label" %>
+                 <%= text_field_tag :delivery_postal_code, @delivery_postal_code, class: "form-control", required: true %>
+               </div>
+             </div>
+-          </div>
+-        </div>
+ 
+-        <div class="card mb-4">
+-          <div class="card-header">
+-            <strong>Order Notes (Optional)</strong>
+-          </div>
+-          <div class="card-body">
+-            <%= text_area_tag :customer_notes, "", class: "form-control", rows: 3, placeholder: "Any special instructions for your order..." %>
+-          </div>
+-        </div>
++            <div class="mb-3">
++              <%= label_tag :province_id, "Province", class: "form-label" %>
++              <%= select_tag :province_id, options_from_collection_for_select(@provinces, :id, :name, @province&.id), 
++                  include_blank: "Select Province", class: "form-select", required: true %>
++            </div>
++
++            <hr>
++
++            <h5>Payment Information</h5>
++            
++            <!-- TEST CARD INFORMATION -->
++            <div class="alert alert-info mb-3">
++              <h6 class="alert-heading"><i class="bi bi-credit-card"></i> Test Card Information</h6>
++              <p class="mb-2"><strong>Card Number:</strong></p>
++              <div class="input-group mb-2">
++                <input type="text" class="form-control" value="4242 4242 4242 4242" id="test-card-number" readonly>
++                <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard('4242424242424242')">
++                  Copy
++                </button>
++              </div>
++              <p class="mb-1"><strong>Expiry:</strong> Any future date (e.g., 12/28)</p>
++              <p class="mb-1"><strong>CVC:</strong> Any 3 digits (e.g., 123)</p>
++              <p class="mb-0 small text-muted">This is a Stripe test environment. No real charges will be made.</p>
++            </div>
++
++            <div id="card-element" class="form-control mb-3" style="padding: 12px;"></div>
++            <div id="card-errors" class="text-danger mb-3"></div>
++
++            <hr>
+ 
+-        <div class="d-flex justify-content-between">
+-          <%= link_to "Back to Cart", cart_path, class: "btn btn-outline-secondary" %>
+-          <%= submit_tag "Place Order", class: "btn btn-primary btn-lg" %>
++            <div class="mb-3">
++              <%= label_tag :customer_notes, "Order Notes (Optional)", class: "form-label" %>
++              <%= text_area_tag :customer_notes, nil, class: "form-control", rows: 3, placeholder: "Any special instructions?" %>
++            </div>
++
++            <%= button_tag "Place Order & Pay", class: "btn btn-success btn-lg w-100", id: "submit-button" %>
++          <% end %>
+         </div>
+-      <% end %>
++      </div>
+     </div>
+ 
+     <div class="col-md-4">
+       <div class="card">
+         <div class="card-header">
+-          <strong>Order Summary</strong>
++          <h5>Order Summary</h5>
+         </div>
+         <div class="card-body">
+           <% @cart_items.each do |item| %>
+             <div class="d-flex justify-content-between mb-2">
+-              <span><%= item[:product].name.truncate(25) %> x <%= item[:quantity] %></span>
++              <span><%= item[:product].name.truncate(30) %> × <%= item[:quantity] %></span>
+               <span>$<%= number_with_precision(item[:total], precision: 2) %></span>
+             </div>
+           <% end %>
+           <hr>
+           <div class="d-flex justify-content-between mb-2">
+-            <span>Subtotal:</span>
+-            <span>$<%= number_with_precision(@subtotal, precision: 2) %></span>
++            <strong>Subtotal:</strong>
++            <strong>$<%= number_with_precision(@subtotal, precision: 2) %></strong>
+           </div>
+-          <div class="d-flex justify-content-between mb-2">
+-            <span>Tax:</span>
+-            <span>Based on province</span>
++          <div class="d-flex justify-content-between text-muted small">
++            <span>Taxes (calculated at checkout)</span>
++            <span>-</span>
+           </div>
+           <hr>
+-          <div class="d-flex justify-content-between">
+-            <strong>Subtotal:</strong>
+-            <strong>$<%= number_with_precision(@subtotal, precision: 2) %></strong>
++          <div class="d-flex justify-content-between mb-2">
++            <strong>Total Items:</strong>
++            <strong><%= @cart_items.sum { |item| item[:quantity] } %></strong>
+           </div>
+-          <small class="text-muted">Final total with tax will be shown after province selection.</small>
++        </div>
++      </div>
++
++      <div class="card mt-3">
++        <div class="card-body">
++          <small class="text-muted">
++            <i class="bi bi-shield-check"></i> Secure payment powered by Stripe
++          </small>
+         </div>
+       </div>
+     </div>
+   </div>
+ </div>
++
++<script src="https://js.stripe.com/v3/"></script>
++<script>
++  // Copy to clipboard function
++  function copyToClipboard(text) {
++    navigator.clipboard.writeText(text).then(function() {
++      alert("Card number copied to clipboard!");
++    }, function(err) {
++      console.error("Could not copy text: ", err);
++    });
++  }
++
++  const stripe = Stripe("<%= Rails.configuration.stripe[:publishable_key] %>");
++  const elements = stripe.elements();
++  const cardElement = elements.create("card", {
++    style: {
++      base: {
++        fontSize: "16px",
++        color: "#32325d",
++        fontFamily: "-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif",
++        "::placeholder": {
++          color: "#aab7c4"
++        }
++      }
++    }
++  });
++  cardElement.mount("#card-element");
++
++  cardElement.on("change", function(event) {
++    const displayError = document.getElementById("card-errors");
++    if (event.error) {
++      displayError.textContent = event.error.message;
++    } else {
++      displayError.textContent = "";
++    }
++  });
++
++  const form = document.getElementById("checkout-form");
++  const submitButton = document.getElementById("submit-button");
++
++  form.addEventListener("submit", async function(event) {
++    event.preventDefault();
++    submitButton.disabled = true;
++    submitButton.innerHTML = "<span class=\"spinner-border spinner-border-sm\" role=\"status\" aria-hidden=\"true\"></span> Processing...";
++
++    // Get form data
++    const formData = new FormData(form);
++    const data = Object.fromEntries(formData);
++
++    try {
++      // Create order and payment intent
++      const response = await fetch("/payments", {
++        method: "POST",
++        headers: {
++          "Content-Type": "application/json",
++          "X-CSRF-Token": document.querySelector("[name=csrf-token]").content
++        },
++        body: JSON.stringify(data)
++      });
++
++      const result = await response.json();
++
++      if (result.error) {
++        throw new Error(result.error);
++      }
++
++      // Confirm payment with Stripe
++      const {error, paymentIntent} = await stripe.confirmCardPayment(result.clientSecret, {
++        payment_method: {
++          card: cardElement,
++          billing_details: {
++            name: data.customer_name,
++            email: data.customer_email,
++            phone: data.customer_phone
++          }
++        }
++      });
++
++      if (error) {
++        document.getElementById("card-errors").textContent = error.message;
++        submitButton.disabled = false;
++        submitButton.textContent = "Place Order & Pay";
++      } else if (paymentIntent.status === "succeeded") {
++        // Redirect to success page
++        window.location.href = "/payments/success?order_id=" + result.order_id;
++      }
++    } catch (error) {
++      document.getElementById("card-errors").textContent = error.message;
++      submitButton.disabled = false;
++      submitButton.textContent = "Place Order & Pay";
++    }
++  });
++</script>
+diff --git a/app/views/payments/success.html.erb b/app/views/payments/success.html.erb
+new file mode 100644
+index 0000000..1f40701
+--- /dev/null
++++ b/app/views/payments/success.html.erb
+@@ -0,0 +1,38 @@
++<div class="container mt-5">
++  <div class="row justify-content-center">
++    <div class="col-md-8">
++      <div class="card text-center">
++        <div class="card-body py-5">
++          <div class="mb-4">
++            <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" fill="currentColor" class="bi bi-check-circle text-success" viewBox="0 0 16 16">
++              <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
++              <path d="M10.97 4.97a.235.235 0 0 0-.02.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-1.071-1.05z"/>
++            </svg>
++          </div>
++          
++          <h1 class="text-success mb-3">Payment Successful!</h1>
++          <p class="lead mb-4">Thank you for your order!</p>
++          
++          <div class="card bg-light mb-4">
++            <div class="card-body">
++              <h5>Order Details</h5>
++              <p class="mb-1"><strong>Order Number:</strong> <%= @order.order_number %></p>
++              <p class="mb-1"><strong>Total Amount:</strong> $<%= number_with_precision(@order.total_amount, precision: 2) %></p>
++              <p class="mb-1"><strong>Payment Status:</strong> <span class="badge bg-success">Paid</span></p>
++              <p class="mb-0"><strong>Stripe Payment ID:</strong> <%= @order.stripe_payment_intent_id %></p>
++            </div>
++          </div>
++
++          <p class="text-muted mb-4">
++            A confirmation email has been sent to <%= @order.customer_email %>
++          </p>
++
++          <div class="d-grid gap-2 d-md-flex justify-content-md-center">
++            <%= link_to "View Order Details", order_path(@order), class: "btn btn-primary" %>
++            <%= link_to "Continue Shopping", products_path, class: "btn btn-outline-secondary" %>
++          </div>
++        </div>
++      </div>
++    </div>
++  </div>
++</div>
+diff --git a/config/initializers/stripe.rb b/config/initializers/stripe.rb
+new file mode 100644
+index 0000000..f85801c
+--- /dev/null
++++ b/config/initializers/stripe.rb
+@@ -0,0 +1,6 @@
++Rails.configuration.stripe = {
++  publishable_key: ENV["STRIPE_PUBLISHABLE_KEY"],
++  secret_key: ENV["STRIPE_SECRET_KEY"]
++}
++
++Stripe.api_key = Rails.configuration.stripe[:secret_key]
+diff --git a/config/routes.rb b/config/routes.rb
+index ad79b24..f91a392 100644
+--- a/config/routes.rb
++++ b/config/routes.rb
+@@ -39,9 +39,11 @@ Rails.application.routes.draw do
+ 
+   # Checkout routes
+   get "checkout", to: "checkouts#show"
+-  post "checkout", to: "checkouts#create"
+-  get "checkout/success", to: "checkouts#success", as: :checkout_success
+-  get "checkout/cancel", to: "checkouts#cancel", as: :checkout_cancel
++
++  # Payment routes
++  post "payments", to: "payments#create"
++  get "payments/success", to: "payments#success"
++  post "payments/webhook", to: "payments#webhook"
+ 
+   # Orders routes (for logged in users)
+   resources :orders, only: [:index, :show]
+diff --git a/db/migrate/20251126234532_add_stripe_fields_to_orders.rb b/db/migrate/20251126234532_add_stripe_fields_to_orders.rb
+new file mode 100644
+index 0000000..3f7f48b
+--- /dev/null
++++ b/db/migrate/20251126234532_add_stripe_fields_to_orders.rb
+@@ -0,0 +1,6 @@
++class AddStripeFieldsToOrders < ActiveRecord::Migration[7.1]
++  def change
++    add_column :orders, :stripe_payment_intent_id, :string
++    add_column :orders, :stripe_payment_status, :string
++  end
++end
+diff --git a/db/schema.rb b/db/schema.rb
+index d2e159a..2ce20ab 100644
+--- a/db/schema.rb
++++ b/db/schema.rb
+@@ -10,7 +10,7 @@
+ #
+ # It's strongly recommended that you check this file into your version control system.
+ 
+-ActiveRecord::Schema[7.1].define(version: 2025_11_26_144832) do
++ActiveRecord::Schema[7.1].define(version: 2025_11_26_234532) do
+   create_table "active_admin_comments", charset: "utf8mb4", collation: "utf8mb4_unicode_ci", force: :cascade do |t|
+     t.string "namespace"
+     t.text "body"
+@@ -108,6 +108,8 @@ ActiveRecord::Schema[7.1].define(version: 2025_11_26_144832) do
+     t.datetime "delivered_at"
+     t.datetime "created_at", null: false
+     t.datetime "updated_at", null: false
++    t.string "stripe_payment_intent_id"
++    t.string "stripe_payment_status"
+     t.index ["customer_phone"], name: "index_orders_on_customer_phone"
+     t.index ["order_number"], name: "index_orders_on_order_number", unique: true
+     t.index ["order_status_id"], name: "index_orders_on_order_status_id"
+diff --git a/docker-compose.yml b/docker-compose.yml
+index 2f7172f..e27cca5 100644
+--- a/docker-compose.yml
++++ b/docker-compose.yml
+@@ -1,49 +1,39 @@
++version: '3.8'
++
+ services:
+-  # MySQL Database
+   db:
+     image: mysql:8.0
+     container_name: ecommerce_db
+-    restart: always
+     environment:
+-      MYSQL_ROOT_PASSWORD: rootpassword
+-      MYSQL_DATABASE: fallspaper
++      MYSQL_ROOT_PASSWORD: root_password
++      MYSQL_DATABASE: artoflivingtrading
+       MYSQL_USER: admin
+-      MYSQL_PASSWORD: fallspaper
++      MYSQL_PASSWORD: admin_password
+     ports:
+-      - "3306:3306"
++      - "3307:3306"
+     volumes:
+       - mysql_data:/var/lib/mysql
+-      - ./db/init:/docker-entrypoint-initdb.d
+-    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+-    healthcheck:
+-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "admin", "-pfallspaper"]
+-      interval: 10s
+-      timeout: 5s
+-      retries: 5
++    command: --default-authentication-plugin=mysql_native_password
+ 
+-  # Rails Application
+   web:
+     build: .
+     container_name: ecommerce_web
+-    command: bash -c "rm -f tmp/pids/server.pid && bundle exec rails server -b '0.0.0.0'"
++    command: bash -c "rm -f tmp/pids/server.pid && bundle exec rails server -b 0.0.0.0"
+     volumes:
+       - .:/app
+-      - bundle_cache:/usr/local/bundle
+     ports:
+       - "3000:3000"
+     depends_on:
+-      db:
+-        condition: service_healthy
++      - db
+     environment:
+       DATABASE_HOST: db
+-      DATABASE_USERNAME: admin
+-      DATABASE_PASSWORD: fallspaper
+-      DATABASE_NAME: fallspaper
+-      RAILS_ENV: development
+-      RAILS_MASTER_KEY: ${RAILS_MASTER_KEY:-}
+-    stdin_open: true
+-    tty: true
++      DATABASE_USER: admin
++      DATABASE_PASSWORD: admin_password
++      DATABASE_NAME: artoflivingtrading
++      STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY}
++      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
++    env_file:
++      - .env
+ 
+ volumes:
+   mysql_data:
+-  bundle_cache:

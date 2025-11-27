@@ -123,3 +123,34 @@ The application supports GST, PST, and HST calculations for all Canadian provinc
 ## License
 
 This project is for educational purposes.
+
+## Environment Variables
+
+This project uses environment variables for sensitive data like API keys.
+
+### Setup
+
+1. Copy the example environment file:
+```bash
+   cp .env.example .env
+```
+
+2. Edit `.env` and add your Stripe test keys:
+```
+   STRIPE_PUBLISHABLE_KEY=pk_test_your_key_here
+   STRIPE_SECRET_KEY=sk_test_your_key_here
+```
+
+3. Restart Docker containers:
+```bash
+   docker-compose restart web
+```
+
+### Getting Stripe Test Keys
+
+1. Go to https://dashboard.stripe.com/
+2. Make sure you're in **Test Mode** (toggle in the left sidebar)
+3. Go to Developers → API keys
+4. Copy your **Publishable key** and **Secret key**
+
+**Note:** Never commit the `.env` file to version control!
