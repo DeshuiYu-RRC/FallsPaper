@@ -10,7 +10,7 @@ Rails.application.configure do
   config.active_storage.service = :production
 
   config.public_file_server.enabled = ENV["RAILS_SERVE_STATIC_FILES"].present?
-  config.assets.compile = false
+  config.assets.compile = true
   config.active_record.dump_schema_after_migration = false
   config.log_level = ENV.fetch("RAILS_LOG_LEVEL", "info")
   config.log_tags = [:request_id]
@@ -18,6 +18,8 @@ Rails.application.configure do
   config.i18n.fallbacks = true
   config.active_support.report_deprecations = false
   config.log_formatter = ::Logger::Formatter.new
+  config.assets.digest = true
+  config.assets.debug = false
 
   if ENV["RAILS_LOG_TO_STDOUT"].present?
     logger           = ActiveSupport::Logger.new(STDOUT)
