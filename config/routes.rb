@@ -46,7 +46,11 @@ Rails.application.routes.draw do
   post "payments/webhook", to: "payments#webhook"
 
   # Orders routes (for logged in users)
-  resources :orders, only: [:index, :show]
+  resources :orders, only: [:index, :show] do
+    member do
+      get :retry_payment
+    end
+  end
 
   # User profile
   resource :profile, only: [:show, :edit, :update]

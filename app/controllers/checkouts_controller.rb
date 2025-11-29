@@ -3,6 +3,20 @@ class CheckoutsController < ApplicationController
   before_action :check_cart, only: [:show]
 
   def show
+    # Check if retrying payment for existing order
+    if params[:order_id].present?
+      @retry_order = current_user.orders.find_by(id: params[:order_id])
+      if @retry_order && @retry_order.pending?
+        # Pre-fill form with order data
+        @customer_name = @retry_order.customer_name
+        @customer_email = @retry_order.customer_email
+        @customer_phone = @retry_order.customer_phone
+        @delivery_address = @retry_order.delivery_address
+        @delivery_city = @retry_order.delivery_city
+        @delivery_postal_code = @retry_order.delivery_postal_code
+      end
+    end
+
     @cart_items = cart_items_with_details
     @subtotal = cart_subtotal
     @provinces = Province.order(:name)
