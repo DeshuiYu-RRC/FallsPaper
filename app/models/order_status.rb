@@ -3,8 +3,8 @@ class OrderStatus < ApplicationRecord
   has_many :orders, dependent: :restrict_with_error
 
   # Validations
-  validates :status_name, presence: true, 
-                          uniqueness: true, 
+  validates :status_name, presence: true,
+                          uniqueness: true,
                           length: { maximum: 50 }
 
   # Constants
@@ -17,11 +17,11 @@ class OrderStatus < ApplicationRecord
   scope :ordered, -> { order(:status_order) }
 
   # Ransack configuration
-  def self.ransackable_attributes(auth_object = nil)
-    ["created_at", "id", "status_description", "status_name", "status_order", "updated_at"]
+  def self.ransackable_attributes(_auth_object = nil)
+    %w[created_at id status_description status_name status_order updated_at]
   end
 
-  def self.ransackable_associations(auth_object = nil)
+  def self.ransackable_associations(_auth_object = nil)
     ["orders"]
   end
 

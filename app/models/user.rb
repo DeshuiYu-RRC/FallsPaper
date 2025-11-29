@@ -10,10 +10,10 @@ class User < ApplicationRecord
   has_many :orders, dependent: :destroy
 
   # Validations
-  validates :username, presence: true, 
-                       uniqueness: true, 
+  validates :username, presence: true,
+                       uniqueness: true,
                        length: { minimum: 3, maximum: 50 }
-  validates :email, presence: true, 
+  validates :email, presence: true,
                     uniqueness: true,
                     format: { with: URI::MailTo::EMAIL_REGEXP }
   validates :phone, length: { maximum: 20 }, allow_blank: true
@@ -25,12 +25,13 @@ class User < ApplicationRecord
   scope :customers, -> { joins(:role).where(roles: { role_name: Role::USER }) }
 
   # Ransack configuration - exclude sensitive fields
-  def self.ransackable_attributes(auth_object = nil)
-    ["address", "city", "created_at", "email", "id", "is_verified", "phone", "postal_code", "province_id", "role_id", "updated_at", "username"]
+  def self.ransackable_attributes(_auth_object = nil)
+    %w[address city created_at email id is_verified phone postal_code province_id role_id
+       updated_at username]
   end
 
-  def self.ransackable_associations(auth_object = nil)
-    ["login_histories", "orders", "province", "role"]
+  def self.ransackable_associations(_auth_object = nil)
+    %w[login_histories orders province role]
   end
 
   # Check if user is admin
@@ -40,7 +41,7 @@ class User < ApplicationRecord
 
   # Get full address
   def full_address
-    [address, city, province&.name, postal_code].compact.reject(&:blank?).join(", ")
+    [address, city, province&.name, postal_code].compact.compact_blank.join(", ")
   end
 
   # Record login

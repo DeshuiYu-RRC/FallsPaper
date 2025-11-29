@@ -3,8 +3,8 @@ class ProductsCategory < ApplicationRecord
   has_many :products, dependent: :nullify
 
   # Validations
-  validates :category_name, presence: true, 
-                            uniqueness: true, 
+  validates :category_name, presence: true,
+                            uniqueness: true,
                             length: { maximum: 50 }
 
   # Scopes
@@ -12,11 +12,11 @@ class ProductsCategory < ApplicationRecord
   scope :ordered, -> { order(:category_name) }
 
   # Ransack configuration
-  def self.ransackable_attributes(auth_object = nil)
-    ["category_description", "category_name", "created_at", "id", "updated_at"]
+  def self.ransackable_attributes(_auth_object = nil)
+    %w[category_description category_name created_at id updated_at]
   end
 
-  def self.ransackable_associations(auth_object = nil)
+  def self.ransackable_associations(_auth_object = nil)
     ["products"]
   end
 

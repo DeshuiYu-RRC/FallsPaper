@@ -7,14 +7,14 @@ class PaymentsController < ApplicationController
     @subtotal = cart_subtotal
 
     if @cart_items.empty?
-      flash[:alert] = "Your cart is empty."
+      flash.now[:alert] = "Your cart is empty."
       redirect_to cart_path and return
     end
 
     province = Province.find_by(id: params[:province_id])
-    
+
     if province.nil?
-      flash[:alert] = "Please select a province."
+      flash.now[:alert] = "Please select a province."
       redirect_to checkout_path and return
     end
 
@@ -55,14 +55,14 @@ class PaymentsController < ApplicationController
       # Create Stripe Payment Intent
       begin
         payment_intent = Stripe::PaymentIntent.create({
-          amount: (total_amount * 100).to_i, # Amount in cents
-          currency: "cad",
-          metadata: {
-            order_id: @order.id,
-            order_number: @order.order_number
-          },
-          description: "Order #{@order.order_number}"
-        })
+                                                        amount: (total_amount * 100).to_i, # Amount in cents
+                                                        currency: "cad",
+                                                        metadata: {
+                                                          order_id: @order.id,
+                                                          order_number: @order.order_number
+                                                        },
+                                                        description: "Order #{@order.order_number}"
+                                                      })
 
         # Store payment intent ID
         @order.update(stripe_payment_intent_id: payment_intent.id)
@@ -73,28 +73,28 @@ class PaymentsController < ApplicationController
         }
       rescue Stripe::StripeError => e
         @order.destroy
-        render json: { error: e.message }, status: :unprocessable_entity
+        render json: { error: e.message }, status: :unprocessable_content
       end
     else
-      render json: { error: @order.errors.full_messages.join(", ") }, status: :unprocessable_entity
+      render json: { error: @order.errors.full_messages.join(", ") }, status: :unprocessable_content
     end
   end
 
   def success
     @order = current_user.orders.find(params[:order_id])
-    
+
     # Verify payment with Stripe
-    if @order.stripe_payment_intent_id.present?
-      begin
-        payment_intent = Stripe::PaymentIntent.retrieve(@order.stripe_payment_intent_id)
-        
-        if payment_intent.status == "succeeded" && @order.pending?
-          @order.mark_as_paid!(@order.stripe_payment_intent_id)
-          clear_cart
-        end
-      rescue Stripe::StripeError => e
-        Rails.logger.error "Stripe error: #{e.message}"
+    return if @order.stripe_payment_intent_id.blank?
+
+    begin
+      payment_intent = Stripe::PaymentIntent.retrieve(@order.stripe_payment_intent_id)
+
+      if payment_intent.status == "succeeded" && @order.pending?
+        @order.mark_as_paid!(@order.stripe_payment_intent_id)
+        clear_cart
       end
+    rescue Stripe::StripeError => e
+      Rails.logger.error "Stripe error: #{e.message}"
     end
   end
 
@@ -102,13 +102,13 @@ class PaymentsController < ApplicationController
   def webhook
     payload = request.body.read
     sig_header = request.env["HTTP_STRIPE_SIGNATURE"]
-    endpoint_secret = ENV["STRIPE_WEBHOOK_SECRET"]
+    endpoint_secret = ENV.fetch("STRIPE_WEBHOOK_SECRET", nil)
 
     begin
       event = Stripe::Webhook.construct_event(
         payload, sig_header, endpoint_secret
       )
-    rescue JSON::ParserError, Stripe::SignatureVerificationError => e
+    rescue JSON::ParserError, Stripe::SignatureVerificationError
       render json: { error: "Webhook error" }, status: :bad_request and return
     end
 
@@ -117,17 +117,13 @@ class PaymentsController < ApplicationController
     when "payment_intent.succeeded"
       payment_intent = event.data.object
       order = Order.find_by(stripe_payment_intent_id: payment_intent.id)
-      
-      if order && order.pending?
-        order.mark_as_paid!(payment_intent.id)
-      end
+
+      order.mark_as_paid!(payment_intent.id) if order&.pending?
     when "payment_intent.payment_failed"
       payment_intent = event.data.object
       order = Order.find_by(stripe_payment_intent_id: payment_intent.id)
-      
-      if order
-        order.update(stripe_payment_status: "failed")
-      end
+
+      order&.update(stripe_payment_status: "failed")
     end
 
     render json: { message: "Success" }

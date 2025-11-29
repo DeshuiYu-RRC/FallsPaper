@@ -1,5 +1,5 @@
 ActiveAdmin.register Product do
-  permit_params :name, :quantity, :stock, :image, :products_category_id, 
+  permit_params :name, :quantity, :stock, :image, :products_category_id,
                 :current_price, :original_price, :bulk_price, :product_image
 
   index do
@@ -36,17 +36,17 @@ ActiveAdmin.register Product do
       f.input :quantity
       f.input :stock
     end
-    
+
     f.inputs "Pricing" do
       f.input :current_price, input_html: { min: 0.01, step: 0.01 }
       f.input :original_price, input_html: { min: 0.01, step: 0.01 }
       f.input :bulk_price, input_html: { min: 0.01, step: 0.01 }
     end
-    
+
     f.inputs "Images" do
       f.input :product_image, as: :file, hint: "Upload local image (recommended)"
       f.input :image, hint: "Or enter image URL"
-      
+
       if f.object.product_image.attached?
         f.li "Current uploaded image:", class: "input" do
           image_tag url_for(f.object.product_image), size: "200x200"
@@ -57,7 +57,7 @@ ActiveAdmin.register Product do
         end
       end
     end
-    
+
     f.actions
   end
 

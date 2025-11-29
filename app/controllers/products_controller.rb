@@ -4,26 +4,26 @@ class ProductsController < ApplicationController
   def index
     @page_title = "All Products"
     @products = Product.includes(:products_category)
-    
+
     # Filter by category
     if params[:category_id].present?
       @products = @products.where(products_category_id: params[:category_id])
       @current_category = ProductsCategory.find_by(id: params[:category_id])
       @page_title = @current_category.category_name if @current_category
     end
-    
+
     # Sorting
-    case params[:sort]
-    when "price_asc"
-      @products = @products.order(current_price: :asc)
-    when "price_desc"
-      @products = @products.order(current_price: :desc)
-    when "name"
-      @products = @products.order(name: :asc)
-    else # newest
-      @products = @products.order(created_at: :desc)
-    end
-    
+    @products = case params[:sort]
+                when "price_asc"
+                  @products.order(current_price: :asc)
+                when "price_desc"
+                  @products.order(current_price: :desc)
+                when "name"
+                  @products.order(name: :asc)
+                else # newest
+                  @products.order(created_at: :desc)
+                end
+
     @products = @products.page(params[:page]).per(12)
   end
 
@@ -37,15 +37,11 @@ class ProductsController < ApplicationController
   def search
     @page_title = "Search Results"
     @products = Product.includes(:products_category)
-    
-    if params[:keyword].present?
-      @products = @products.where("name LIKE ?", "%#{params[:keyword]}%")
-    end
-    
-    if params[:category_id].present?
-      @products = @products.where(products_category_id: params[:category_id])
-    end
-    
+
+    @products = @products.where("name LIKE ?", "%#{params[:keyword]}%") if params[:keyword].present?
+
+    @products = @products.where(products_category_id: params[:category_id]) if params[:category_id].present?
+
     @products = @products.page(params[:page]).per(12)
     render :index
   end

@@ -67,3 +67,9 @@ group :test do
   gem "selenium-webdriver"
 end
 gem 'stripe'
+
+# Code quality and style checking
+group :development do
+  gem "rubocop", require: false
+  gem "rubocop-rails", require: false
+end

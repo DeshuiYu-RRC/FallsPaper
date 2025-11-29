@@ -2,8 +2,8 @@
 ActiveAdmin.register User do
   menu priority: 5, label: "Users"
 
-  permit_params :username, :email, :password, :password_confirmation, 
-                :is_verified, :role_id, :province_id, :address, :city, 
+  permit_params :username, :email, :password, :password_confirmation,
+                :is_verified, :role_id, :province_id, :address, :city,
                 :postal_code, :phone
 
   filter :username
@@ -46,9 +46,7 @@ ActiveAdmin.register User do
       row :province
       row :postal_code
       row :phone
-      row "Full Address" do |user|
-        user.full_address
-      end
+      row "Full Address", &:full_address
       row :created_at
       row :updated_at
     end
@@ -76,7 +74,7 @@ ActiveAdmin.register User do
 
   form do |f|
     f.semantic_errors
-    
+
     f.inputs "Account Information" do
       f.input :username
       f.input :email

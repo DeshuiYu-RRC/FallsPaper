@@ -6,7 +6,7 @@ class CheckoutsController < ApplicationController
     @cart_items = cart_items_with_details
     @subtotal = cart_subtotal
     @provinces = Province.order(:name)
-    
+
     # Pre-fill user info
     @customer_name = current_user.username
     @customer_email = current_user.email
@@ -23,14 +23,14 @@ class CheckoutsController < ApplicationController
     @provinces = Province.order(:name)
 
     if @cart_items.empty?
-      flash[:alert] = "Your cart is empty."
+      flash.now[:alert] = "Your cart is empty."
       redirect_to cart_path and return
     end
 
     province = Province.find_by(id: params[:province_id])
-    
+
     if province.nil?
-      flash[:alert] = "Please select a province."
+      flash.now[:alert] = "Please select a province."
       @customer_name = params[:customer_name]
       @customer_email = params[:customer_email]
       @customer_phone = params[:customer_phone]
@@ -77,7 +77,7 @@ class CheckoutsController < ApplicationController
 
       redirect_to checkout_success_path
     else
-      flash.now[:alert] = "Error creating order: #{@order.errors.full_messages.join(", ")}"
+      flash.now[:alert] = "Error creating order: #{@order.errors.full_messages.join(', ')}"
       @customer_name = params[:customer_name]
       @customer_email = params[:customer_email]
       @customer_phone = params[:customer_phone]
@@ -99,9 +99,9 @@ class CheckoutsController < ApplicationController
   private
 
   def check_cart
-    if current_cart.nil? || current_cart.empty?
-      flash[:alert] = "Your cart is empty."
-      redirect_to products_path
-    end
+    return if current_cart.present?
+
+    flash[:alert] = "Your cart is empty."
+    redirect_to products_path
   end
 end

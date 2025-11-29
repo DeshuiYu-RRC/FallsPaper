@@ -7,22 +7,22 @@ class Province < ApplicationRecord
   validates :name, presence: true, uniqueness: true, length: { maximum: 50 }
 
   # Ransack configuration
-  def self.ransackable_attributes(auth_object = nil)
-    ["code", "created_at", "gst_rate", "hst_rate", "id", "name", "pst_rate", "updated_at"]
+  def self.ransackable_attributes(_auth_object = nil)
+    %w[code created_at gst_rate hst_rate id name pst_rate updated_at]
   end
 
-  def self.ransackable_associations(auth_object = nil)
+  def self.ransackable_associations(_auth_object = nil)
     ["users"]
   end
 
   # Calculate total tax rate
   def total_tax_rate
-    hst_rate > 0 ? hst_rate : gst_rate + pst_rate
+    hst_rate.positive? ? hst_rate : gst_rate + pst_rate
   end
 
   # Calculate taxes for a given amount
   def calculate_taxes(amount)
-    if hst_rate > 0
+    if hst_rate.positive?
       { gst: 0, pst: 0, hst: (amount * hst_rate).round(2), total: (amount * hst_rate).round(2) }
     else
       gst = (amount * gst_rate).round(2)

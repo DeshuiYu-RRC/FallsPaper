@@ -9,10 +9,10 @@ class ApplicationController < ActionController::Base
   # Authentication method for ActiveAdmin
   def authenticate_admin_user!
     authenticate_user!
-    unless current_user&.admin?
-      flash[:alert] = "You are not authorized to access this page."
-      redirect_to root_path
-    end
+    return if current_user&.admin?
+
+    flash[:alert] = "You are not authorized to access this page."
+    redirect_to root_path
   end
 
   # Get current cart from session
@@ -38,7 +38,7 @@ class ApplicationController < ActionController::Base
   def update_cart_item(product_id, quantity)
     session[:cart] ||= {}
     product_id = product_id.to_s
-    if quantity.to_i > 0
+    if quantity.to_i.positive?
       session[:cart][product_id] = quantity.to_i
     else
       session[:cart].delete(product_id)
@@ -59,18 +59,19 @@ class ApplicationController < ActionController::Base
   # Get cart items with product details
   def cart_items_with_details
     items = []
-    return items if current_cart.nil? || current_cart.empty?
-    
+    return items if current_cart.blank?
+
     current_cart.each do |product_id, quantity|
       next if quantity.to_i <= 0
+
       product = Product.find_by(id: product_id.to_i)
-      if product
-        items << {
-          product: product,
-          quantity: quantity.to_i,
-          total: (product.current_price * quantity.to_i).round(2)
-        }
-      end
+      next unless product
+
+      items << {
+        product: product,
+        quantity: quantity.to_i,
+        total: (product.current_price * quantity.to_i).round(2)
+      }
     end
     items
   end

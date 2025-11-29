@@ -5,11 +5,11 @@ class OrderItem < ApplicationRecord
 
   # Validations
   validates :product_name, presence: true, length: { maximum: 255 }
-  validates :quantity, presence: true, 
+  validates :quantity, presence: true,
                        numericality: { only_integer: true, greater_than: 0 }
-  validates :unit_price, presence: true, 
+  validates :unit_price, presence: true,
                          numericality: { greater_than_or_equal_to: 0 }
-  validates :total_price, presence: true, 
+  validates :total_price, presence: true,
                           numericality: { greater_than_or_equal_to: 0 }
 
   # Callbacks
@@ -18,7 +18,8 @@ class OrderItem < ApplicationRecord
 
   # Set product info from product
   def set_product_info
-    return unless product.present?
+    return if product.blank?
+
     self.product_name ||= product.name
     self.unit_price ||= product.current_price
   end

@@ -79,3 +79,6 @@ end
 
 # Active Storage URL configuration
 Rails.application.routes.default_url_options[:host] = "localhost:3000"
+
+# Active Storage URL configuration
+Rails.application.routes.default_url_options[:host] = "localhost:3000"

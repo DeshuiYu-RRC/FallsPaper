@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: fallspaper_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: fallspaper_production
+      MYSQL_USER: ${DATABASE_USERNAME:-admin}
+      MYSQL_PASSWORD: ${DATABASE_PASSWORD:-fallspaper}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    networks:
+      - fallspaper_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "${DATABASE_USERNAME:-admin}", "-p${DATABASE_PASSWORD:-fallspaper}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build: .
+    container_name: fallspaper_web
+    command: bash -c "bundle exec rails db:prepare && bundle exec rails assets:precompile && bundle exec rails server -b '0.0.0.0' -e production"
+    restart: always
+    volumes:
+      - .:/app
+      - bundle_cache:/usr/local/bundle
+      - storage_data:/app/storage
+      - public_uploads:/app/public/uploads
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      RAILS_ENV: production
+      DATABASE_HOST: db
+      DATABASE_USERNAME: ${DATABASE_USERNAME:-admin}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-fallspaper}
+      DATABASE_NAME: fallspaper_production
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE}
+      RAILS_SERVE_STATIC_FILES: "true"
+      RAILS_LOG_TO_STDOUT: "true"
+      STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      APP_HOST: ${APP_HOST:-localhost}
+    networks:
+      - fallspaper_network
+
+volumes:
+  mysql_data:
+  bundle_cache:
+  storage_data:
+  public_uploads:
+
+networks:
+  fallspaper_network:
+    driver: bridge

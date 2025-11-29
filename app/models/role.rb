@@ -11,16 +11,16 @@ class Role < ApplicationRecord
   ROOT = "root".freeze
 
   # Ransack configuration
-  def self.ransackable_attributes(auth_object = nil)
-    ["created_at", "id", "role_description", "role_name", "updated_at"]
+  def self.ransackable_attributes(_auth_object = nil)
+    %w[created_at id role_description role_name updated_at]
   end
 
-  def self.ransackable_associations(auth_object = nil)
+  def self.ransackable_associations(_auth_object = nil)
     ["users"]
   end
 
   def admin?
-    role_name == ADMIN || role_name == ROOT
+    [ADMIN, ROOT].include?(role_name)
   end
 
   def to_s

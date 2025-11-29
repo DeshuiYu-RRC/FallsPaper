@@ -6,8 +6,8 @@ class CartsController < ApplicationController
 
   def add
     product = Product.find_by(id: params[:product_id])
-    
-    if product && product.in_stock?
+
+    if product&.in_stock?
       quantity = params[:quantity].present? ? params[:quantity].to_i : 1
       add_to_cart(product.id, quantity)
       flash[:notice] = "#{product.name} added to cart."
@@ -15,14 +15,14 @@ class CartsController < ApplicationController
       flash[:alert] = "Product not available."
     end
 
-    redirect_back(fallback_location: root_path)
+    redirect_back_or_to(root_path)
   end
 
   def update
     product_id = params[:product_id]
     quantity = params[:quantity].to_i
 
-    if quantity > 0
+    if quantity.positive?
       update_cart_item(product_id, quantity)
       flash[:notice] = "Cart updated."
     else
@@ -37,7 +37,7 @@ class CartsController < ApplicationController
     product_id = params[:product_id]
     product = Product.find_by(id: product_id)
     remove_from_cart(product_id)
-    
+
     flash[:notice] = "#{product&.name || Item} removed from cart."
     redirect_to cart_path
   end

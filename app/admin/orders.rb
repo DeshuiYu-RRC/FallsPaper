@@ -15,7 +15,7 @@ ActiveAdmin.register Order do
     end
     column "Payment" do |order|
       if order.stripe_payment_intent_id.present?
-        link_to "View in Stripe", "https://dashboard.stripe.com/test/payments/#{order.stripe_payment_intent_id}", target: "_blank"
+        link_to "View in Stripe", "https://dashboard.stripe.com/test/payments/#{order.stripe_payment_intent_id}", target: "_blank", rel: "noopener"
       else
         "No payment"
       end
@@ -77,7 +77,8 @@ ActiveAdmin.register Order do
 
     panel "Stripe Payment" do
       if order.stripe_payment_intent_id.present?
-        para link_to "View Payment in Stripe Dashboard", "https://dashboard.stripe.com/test/payments/#{order.stripe_payment_intent_id}", target: "_blank", class: "button"
+        para link_to "View Payment in Stripe Dashboard", "https://dashboard.stripe.com/test/payments/#{order.stripe_payment_intent_id}",
+                     target: "_blank", class: "button", rel: "noopener"
       else
         para "No Stripe payment associated"
       end
@@ -90,21 +91,22 @@ ActiveAdmin.register Order do
     f.inputs "Change Order Status" do
       f.input :order_status, as: :select, collection: OrderStatus.order(:status_order).map { |s| [s.status_name.titleize, s.id] }
     end
-    
+
     f.inputs "Order Information (Read Only)" do
       f.li "Order Number: #{f.object.order_number}"
       f.li "Customer: #{f.object.customer_name}"
       f.li "Email: #{f.object.customer_email}"
       f.li "Current Status: #{f.object.status_name.titleize}"
-      f.li "Total Amount: $#{sprintf('%.2f', f.object.total_amount)}"
-      
+      f.li "Total Amount: $#{format('%.2f', f.object.total_amount)}"
+
       if f.object.stripe_payment_intent_id.present?
         f.li do
-          link_to "View in Stripe Dashboard", "https://dashboard.stripe.com/test/payments/#{f.object.stripe_payment_intent_id}", target: "_blank", class: "button"
+          link_to "View in Stripe Dashboard", "https://dashboard.stripe.com/test/payments/#{f.object.stripe_payment_intent_id}", target: "_blank",
+                                                                                                                                 class: "button", rel: "noopener"
         end
       end
     end
-    
+
     f.actions
   end
 

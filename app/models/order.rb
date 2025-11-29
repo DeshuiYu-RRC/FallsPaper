@@ -18,13 +18,13 @@ class Order < ApplicationRecord
   before_validation :generate_order_number, on: :create
 
   # Ransackable attributes
-  def self.ransackable_attributes(auth_object = nil)
-    ["order_number", "customer_name", "customer_phone", "customer_email", 
-     "total_amount", "created_at", "updated_at", "order_status_id", "user_id"]
+  def self.ransackable_attributes(_auth_object = nil)
+    %w[order_number customer_name customer_phone customer_email
+       total_amount created_at updated_at order_status_id user_id]
   end
 
-  def self.ransackable_associations(auth_object = nil)
-    ["user", "order_status", "order_items"]
+  def self.ransackable_associations(_auth_object = nil)
+    %w[user order_status order_items]
   end
 
   # Status helpers
@@ -92,17 +92,17 @@ class Order < ApplicationRecord
   # Mark order as shipped
   def mark_as_shipped!
     shipped_status = Order.shipped_status
-    if shipped_status
-      update!(
-        order_status_id: shipped_status.id,
-        shipped_at: Time.current
-      )
-    end
+    return unless shipped_status
+
+    update!(
+      order_status_id: shipped_status.id,
+      shipped_at: Time.current
+    )
   end
 
   private
 
   def generate_order_number
-    self.order_number ||= "ORD#{Time.current.strftime("%Y%m%d")}#{SecureRandom.hex(4).upcase}"
+    self.order_number ||= "ORD#{Time.current.strftime('%Y%m%d')}#{SecureRandom.hex(4).upcase}"
   end
 end

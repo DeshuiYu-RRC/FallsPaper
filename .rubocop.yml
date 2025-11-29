@@ -1,8 +1,54 @@
-# Omakase Ruby styling for Rails
-inherit_gem: { rubocop-rails-omakase: rubocop.yml }
+require:
+  - rubocop-rails
 
-# Overwrite or add rules to create your own house style
-#
-# # Use `[a, [b, c]]` not `[ a, [ b, c ] ]`
-# Layout/SpaceInsideArrayLiteralBrackets:
-#   Enabled: false
+AllCops:
+  NewCops: enable
+  TargetRubyVersion: 3.2
+  SuggestExtensions: false
+  Exclude:
+    - 'db/**/*'
+    - 'config/**/*'
+    - 'script/**/*'
+    - 'bin/**/*'
+    - 'vendor/**/*'
+    - 'node_modules/**/*'
+    - 'tmp/**/*'
+    - 'lib/tasks/**/*'
+    - 'Gemfile'
+    - 'Rakefile'
+
+# Disable most strict rules for demo project
+Style/Documentation:
+  Enabled: false
+
+Style/FrozenStringLiteralComment:
+  Enabled: false
+
+Style/StringLiterals:
+  Enabled: false
+
+Style/TrailingCommaInArrayLiteral:
+  Enabled: false
+
+Style/TrailingCommaInHashLiteral:
+  Enabled: false
+
+# Disable all metrics checks for demo
+Metrics:
+  Enabled: false
+
+# Allow longer lines (increased for admin files)
+Layout/LineLength:
+  Max: 200
+
+# Disable internationalization warnings (demo project)
+Rails/I18nLocaleTexts:
+  Enabled: false
+
+# Allow raw HTML in admin
+Rails/OutputSafety:
+  Enabled: false
+
+# Allow filters in parent controllers
+Rails/LexicallyScopedActionFilter:
+  Enabled: false
