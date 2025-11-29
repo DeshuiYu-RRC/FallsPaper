@@ -17,5 +17,5 @@ test:
 production:
   <<: *default
   database: fallspaper_production
-  username: fallspaper
-  password: <%= ENV["FALLSPAPER_DATABASE_PASSWORD"] %>
+  username: <%= ENV["DATABASE_USERNAME"] || "admin" %>
+  password: <%= ENV["DATABASE_PASSWORD"] || "fallspaper" %>
