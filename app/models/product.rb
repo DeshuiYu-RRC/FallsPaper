@@ -3,55 +3,66 @@ class Product < ApplicationRecord
   belongs_to :products_category, optional: true
   has_one :products_detail, dependent: :destroy
   has_many :order_items, dependent: :restrict_with_error
-
+  
   # Active Storage for local image upload
-  has_one_attached :product_image
-
+  has_one_attached :product_image do |attachable|
+    attachable.variant :thumb, resize_to_limit: [100, 100]
+    attachable.variant :small, resize_to_limit: [200, 200]
+    attachable.variant :medium, resize_to_limit: [400, 400]
+    attachable.variant :large, resize_to_limit: [800, 800]
+  end
+  
   # Validations
   validates :name, presence: true, uniqueness: true, length: { maximum: 255 }
   validates :stock, presence: true, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
   validates :current_price, presence: true, numericality: { greater_than_or_equal_to: 0.01 }
   validates :original_price, presence: true, numericality: { greater_than_or_equal_to: 0.01 }
   validates :bulk_price, presence: true, numericality: { greater_than_or_equal_to: 0.01 }
-
+  
   # Scopes
   scope :in_stock, -> { where("stock > 0") }
   scope :on_sale, -> { where("current_price < original_price") }
-  scope :new_arrivals, -> { where(created_at: 3.days.ago..).where.not(id: recently_updated.pluck(:id)) }
+  scope :new_arrivals, -> { where("created_at >= ?", 3.days.ago).where.not(id: recently_updated.pluck(:id)) }
   scope :recently_updated, -> { where("updated_at >= ? AND updated_at > created_at + INTERVAL 1 HOUR", 3.days.ago) }
-
+  
   # Ransackable attributes
-  def self.ransackable_attributes(_auth_object = nil)
-    %w[name current_price original_price stock created_at updated_at products_category_id]
+  def self.ransackable_attributes(auth_object = nil)
+    ["name", "current_price", "original_price", "stock", "created_at", "updated_at", "products_category_id"]
   end
-
-  def self.ransackable_associations(_auth_object = nil)
-    %w[products_category products_detail]
+  
+  def self.ransackable_associations(auth_object = nil)
+    ["products_category", "products_detail"]
   end
-
+  
   # Helper methods
   def category_name
     products_category&.category_name || "Uncategorized"
   end
-
+  
   def in_stock?
-    stock.positive?
+    stock > 0
   end
-
+  
   def on_sale?
     current_price < original_price
   end
-
+  
   def discount_percentage
     return 0 unless on_sale?
-
     (((original_price - current_price) / original_price) * 100).round
   end
-
+  
   # Get image URL - prioritize uploaded image, fallback to URL
-  def image_url
+  # size can be :thumb, :small, :medium, :large, or nil for original
+  def image_url(size = nil)
     if product_image.attached?
-      Rails.application.routes.url_helpers.rails_blob_path(product_image, only_path: true)
+      if size
+        Rails.application.routes.url_helpers.rails_representation_url(
+          product_image.variant(size), only_path: true
+        )
+      else
+        Rails.application.routes.url_helpers.rails_blob_path(product_image, only_path: true)
+      end
     else
       image
     end
