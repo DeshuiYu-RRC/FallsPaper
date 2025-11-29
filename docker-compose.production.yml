@@ -24,7 +24,7 @@ services:
   web:
     build: .
     container_name: fallspaper_web
-    command: bash -c "bundle exec rails db:prepare && bundle exec rails assets:precompile && bundle exec rails server -b '0.0.0.0' -e production"
+    command: bash -c "bundle exec rails db:prepare && bundle exec rails server -b '0.0.0.0' -e production"
     restart: always
     volumes:
       - .:/app
